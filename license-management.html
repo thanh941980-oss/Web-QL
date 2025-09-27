@@ -15,10 +15,12 @@
     .form-group input,.form-group select,.form-group textarea {width:100%;padding:.75rem;border:1px solid #ddd;border-radius:4px;font-size:1rem;}
     .btn {display:inline-block;padding:.75rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:4px;font-size:1rem;cursor:pointer;transition:.3s;}
     .btn:hover {background:#2980b9;}
+    .btn:disabled {background:#95a5a6;cursor:not-allowed;}
     .back-btn{background:#7f8c8d}.back-btn:hover{background:#95a5a6}
     .logout-btn{background:#e74c3c}.logout-btn:hover{background:#c0392b}
     .success-btn{background:#27ae60}.success-btn:hover{background:#219653}
     .warning-btn{background:#f39c12}.warning-btn:hover{background:#e67e22}
+    .small-btn {padding: 0.5rem 1rem; font-size: 0.9rem;}
     
     .card {background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1);padding:20px;margin-bottom:20px;}
     .stats-container {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px;}
@@ -33,9 +35,16 @@
     .key-unused {background-color:#fff3cd;}
     
     .key-list {max-height:400px;overflow-y:auto;margin-top:15px;}
-    .key-item {padding:10px;margin:5px 0;background:#f8f9fa;border-radius:4px;font-family:monospace;}
+    .key-item {padding:10px;margin:5px 0;background:#f8f9fa;border-radius:4px;font-family:monospace;display:flex;justify-content:space-between;align-items:center;}
     
     .admin-notice {background:#fff3cd;border-left:4px solid #ffc107;padding:10px;margin:10px 0;}
+    
+    .loading {display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #3498db;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px;}
+    @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+    
+    .alert {padding:10px;border-radius:4px;margin:10px 0;}
+    .alert-success {background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+    .alert-error {background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -98,7 +107,9 @@
       <input type="text" id="keySuffix" placeholder="VD: 2025, TRO, KEY" maxlength="5">
     </div>
     
-    <button id="generateKeysBtn" class="btn success-btn">🎯 Tạo mã bản quyền</button>
+    <button id="generateKeysBtn" class="btn success-btn">
+      <span id="generateBtnText">🎯 Tạo mã bản quyền</span>
+    </button>
     
     <div id="generatedKeys" class="card" style="display: none; margin-top: 20px;">
       <h4>✅ Mã bản quyền đã tạo thành công!</h4>
@@ -144,6 +155,8 @@ const firebaseConfig = {
   messagingSenderId: "623183081841",
   appId: "1:623183081841:web:72cee8d908d383b65e46d0"
 };
+
+// Khởi tạo Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
@@ -156,11 +169,54 @@ auth.onAuthStateChanged(user => {
     window.location.href='index.html';
   } else {
     currentUser = user;
+    console.log('User đã đăng nhập:', user.uid);
+    
+    // Kiểm tra kết nối Firebase
+    checkFirebaseConnection();
+    
+    // Tải dữ liệu
     loadLicenseStats();
     loadAllKeys();
     loadActiveUsers();
   }
 });
+
+// --- Kiểm tra kết nối Firebase ---
+function checkFirebaseConnection() {
+  database.ref('.info/connected').on('value', function(snap) {
+    if (snap.val() === true) {
+      console.log('✅ Đã kết nối Firebase');
+    } else {
+      console.log('❌ Mất kết nối Firebase');
+      showAlert('Mất kết nối với server. Vui lòng kiểm tra kết nối internet.', 'error');
+    }
+  });
+}
+
+// --- Hiển thị thông báo ---
+function showAlert(message, type = 'success') {
+  // Xóa thông báo cũ
+  const existingAlert = document.querySelector('.alert');
+  if (existingAlert) {
+    existingAlert.remove();
+  }
+  
+  // Tạo thông báo mới
+  const alert = document.createElement('div');
+  alert.className = `alert alert-${type}`;
+  alert.textContent = message;
+  
+  // Thêm vào đầu container
+  const container = document.querySelector('.container');
+  container.insertBefore(alert, container.firstChild);
+  
+  // Tự động xóa sau 5 giây
+  setTimeout(() => {
+    if (alert.parentNode) {
+      alert.remove();
+    }
+  }, 5000);
+}
 
 // --- Hàm tạo mã bản quyền ---
 function generateLicenseKey(length = 8, prefix = '', suffix = '') {
@@ -178,48 +234,71 @@ function generateLicenseKey(length = 8, prefix = '', suffix = '') {
 
 // --- Tạo mã mới ---
 document.getElementById('generateKeysBtn').addEventListener('click', async function() {
-  const count = parseInt(document.getElementById('keyCount').value) || 10;
-  const length = parseInt(document.getElementById('keyLength').value) || 8;
-  const prefix = document.getElementById('keyPrefix').value.trim();
-  const suffix = document.getElementById('keySuffix').value.trim();
+  const btn = this;
+  const btnText = document.getElementById('generateBtnText');
+  const originalText = btnText.textContent;
   
-  if (count > 1000) {
-    alert('Số lượng mã tối đa là 1000!');
-    return;
-  }
-  
-  const keys = [];
-  for (let i = 0; i < count; i++) {
-    let key;
-    let attempts = 0;
+  try {
+    // Hiển thị loading
+    btn.disabled = true;
+    btnText.innerHTML = '<span class="loading"></span> Đang tạo...';
     
-    // Đảm bảo mã không trùng
-    do {
-      key = generateLicenseKey(length, prefix, suffix);
-      attempts++;
-      if (attempts > 100) {
-        alert('Không thể tạo mã không trùng sau 100 lần thử!');
-        return;
-      }
-    } while (keys.includes(key));
+    const count = parseInt(document.getElementById('keyCount').value) || 10;
+    const length = parseInt(document.getElementById('keyLength').value) || 8;
+    const prefix = document.getElementById('keyPrefix').value.trim();
+    const suffix = document.getElementById('keySuffix').value.trim();
     
-    keys.push(key);
+    if (count > 1000) {
+      showAlert('Số lượng mã tối đa là 1000!', 'error');
+      return;
+    }
+    
+    if (length < 6 || length > 20) {
+      showAlert('Độ dài mã phải từ 6 đến 20 ký tự!', 'error');
+      return;
+    }
+    
+    const keys = [];
+    for (let i = 0; i < count; i++) {
+      let key;
+      let attempts = 0;
+      
+      // Đảm bảo mã không trùng
+      do {
+        key = generateLicenseKey(length, prefix, suffix);
+        attempts++;
+        if (attempts > 100) {
+          showAlert('Không thể tạo mã không trùng sau 100 lần thử!', 'error');
+          return;
+        }
+      } while (keys.includes(key));
+      
+      keys.push(key);
+    }
+    
+    // Hiển thị mã
+    const keysList = document.getElementById('keysList');
+    keysList.innerHTML = keys.map(key => 
+      `<div class="key-item">
+        <span>${key}</span>
+        <button class="btn small-btn copy-single-btn" data-key="${key}">Sao chép</button>
+      </div>`
+    ).join('');
+    
+    document.getElementById('generatedKeys').style.display = 'block';
+    
+    // Lưu vào database
+    await saveGeneratedKeys(keys);
+    showAlert(`✅ Đã tạo thành công ${count} mã bản quyền!`);
+    
+  } catch (error) {
+    console.error('Lỗi khi tạo mã:', error);
+    showAlert('Lỗi khi tạo mã: ' + error.message, 'error');
+  } finally {
+    // Khôi phục trạng thái nút
+    btn.disabled = false;
+    btnText.textContent = originalText;
   }
-  
-  // Hiển thị mã
-  const keysList = document.getElementById('keysList');
-  keysList.innerHTML = keys.map(key => 
-    `<div class="key-item">
-      <span>${key}</span>
-      <button class="btn small-btn copy-single-btn" data-key="${key}" style="float: right;">Sao chép</button>
-    </div>`
-  ).join('');
-  
-  document.getElementById('generatedKeys').style.display = 'block';
-  
-  // Lưu vào database
-  await saveGeneratedKeys(keys);
-  alert(`✅ Đã tạo thành công ${count} mã bản quyền!`);
 });
 
 // Lưu mã vào database
@@ -237,9 +316,19 @@ async function saveGeneratedKeys(keys) {
     };
   });
   
-  await database.ref('licenseKeys').update(batch);
-  loadLicenseStats();
-  loadAllKeys();
+  try {
+    await database.ref('licenseKeys').update(batch);
+    console.log('✅ Đã lưu mã vào database');
+  } catch (error) {
+    console.error('❌ Lỗi khi lưu mã:', error);
+    
+    // Kiểm tra xem lỗi có phải do Rules không
+    if (error.code === 'PERMISSION_DENIED') {
+      throw new Error('Không có quyền ghi vào database. Vui lòng kiểm tra Firebase Rules.');
+    } else {
+      throw new Error('Lỗi kết nối database: ' + error.message);
+    }
+  }
 }
 
 // --- Sao chép mã ---
@@ -247,7 +336,10 @@ document.addEventListener('click', function(e) {
   if (e.target.classList.contains('copy-single-btn')) {
     const key = e.target.dataset.key;
     navigator.clipboard.writeText(key).then(() => {
-      alert('Đã sao chép mã: ' + key);
+      showAlert('Đã sao chép mã: ' + key);
+    }).catch(err => {
+      console.error('Lỗi sao chép:', err);
+      showAlert('Lỗi khi sao chép mã', 'error');
     });
   }
   
@@ -257,7 +349,10 @@ document.addEventListener('click', function(e) {
       .join('\n');
     
     navigator.clipboard.writeText(keys).then(() => {
-      alert('Đã sao chép tất cả mã!');
+      showAlert('Đã sao chép tất cả mã!');
+    }).catch(err => {
+      console.error('Lỗi sao chép:', err);
+      showAlert('Lỗi khi sao chép mã', 'error');
     });
   }
 });
@@ -266,6 +361,11 @@ document.addEventListener('click', function(e) {
 document.getElementById('exportKeysBtn').addEventListener('click', function() {
   const keys = Array.from(document.querySelectorAll('.copy-single-btn'))
     .map(btn => btn.dataset.key);
+  
+  if (keys.length === 0) {
+    showAlert('Không có mã nào để xuất!', 'error');
+    return;
+  }
   
   const content = keys.join('\n');
   const blob = new Blob([content], { type: 'text/plain' });
@@ -277,6 +377,7 @@ document.getElementById('exportKeysBtn').addEventListener('click', function() {
   a.click();
   
   URL.revokeObjectURL(url);
+  showAlert('Đã xuất file thành công!');
 });
 
 // --- Thống kê ---
@@ -297,6 +398,9 @@ function loadLicenseStats() {
     document.getElementById('totalKeys').textContent = total;
     document.getElementById('usedKeys').textContent = used;
     document.getElementById('availableKeys').textContent = available;
+  }, error => {
+    console.error('Lỗi khi tải thống kê:', error);
+    showAlert('Lỗi khi tải thống kê: ' + error.message, 'error');
   });
 }
 
@@ -327,7 +431,7 @@ function loadAllKeys() {
           <tr class="${data.used ? 'key-used' : 'key-unused'}">
             <td><strong>${key}</strong></td>
             <td>${data.used ? '✅ Đã sử dụng' : '🔄 Chưa sử dụng'}</td>
-            <td>${new Date(data.generatedAt).toLocaleDateString('vi-VN')}</td>
+            <td>${data.generatedAt ? new Date(data.generatedAt).toLocaleDateString('vi-VN') : '---'}</td>
             <td>${data.usedBy ? data.usedBy.substring(0, 8) + '...' : '---'}</td>
             <td>${data.usedAt ? new Date(data.usedAt).toLocaleDateString('vi-VN') : '---'}</td>
           </tr>
@@ -337,6 +441,9 @@ function loadAllKeys() {
     
     container.innerHTML = '';
     container.appendChild(table);
+  }).catch(error => {
+    console.error('Lỗi khi tải danh sách mã:', error);
+    showAlert('Lỗi khi tải danh sách mã: ' + error.message, 'error');
   });
 }
 
@@ -385,7 +492,7 @@ function loadActiveUsers() {
             <td>${user.userId.substring(0, 8)}...</td>
             <td>${user.email}</td>
             <td><code>${user.licenseKey}</code></td>
-            <td>${new Date(user.activatedAt).toLocaleDateString('vi-VN')}</td>
+            <td>${user.activatedAt ? new Date(user.activatedAt).toLocaleDateString('vi-VN') : '---'}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -394,6 +501,9 @@ function loadActiveUsers() {
     document.getElementById('activeUsers').textContent = licensedUsers.length;
     container.innerHTML = '';
     container.appendChild(table);
+  }).catch(error => {
+    console.error('Lỗi khi tải danh sách user:', error);
+    showAlert('Lỗi khi tải danh sách user: ' + error.message, 'error');
   });
 }
 
@@ -403,23 +513,48 @@ document.getElementById('deleteUsedKeysBtn').addEventListener('click', function(
     return;
   }
   
+  const btn = this;
+  const originalText = btn.textContent;
+  
+  btn.disabled = true;
+  btn.textContent = 'Đang xóa...';
+  
   database.ref('licenseKeys').once('value').then(snapshot => {
-    if (!snapshot.exists()) return;
+    if (!snapshot.exists()) {
+      showAlert('Không có mã nào để xóa!', 'error');
+      return;
+    }
     
     const keys = snapshot.val();
     const updates = {};
+    let deletedCount = 0;
     
     Object.entries(keys).forEach(([key, data]) => {
       if (data.used) {
         updates[key] = null;
+        deletedCount++;
       }
     });
     
+    if (deletedCount === 0) {
+      showAlert('Không có mã đã sử dụng nào để xóa!', 'error');
+      return;
+    }
+    
     database.ref('licenseKeys').update(updates).then(() => {
-      alert('Đã xóa mã đã sử dụng!');
+      showAlert(`Đã xóa ${deletedCount} mã đã sử dụng!`);
       loadLicenseStats();
       loadAllKeys();
+    }).catch(error => {
+      console.error('Lỗi khi xóa mã:', error);
+      showAlert('Lỗi khi xóa mã: ' + error.message, 'error');
     });
+  }).catch(error => {
+    console.error('Lỗi khi xóa mã:', error);
+    showAlert('Lỗi khi xóa mã: ' + error.message, 'error');
+  }).finally(() => {
+    btn.disabled = false;
+    btn.textContent = originalText;
   });
 });
 
@@ -428,10 +563,22 @@ document.getElementById('deleteAllKeysBtn').addEventListener('click', function()
     return;
   }
   
+  const btn = this;
+  const originalText = btn.textContent;
+  
+  btn.disabled = true;
+  btn.textContent = 'Đang xóa...';
+  
   database.ref('licenseKeys').remove().then(() => {
-    alert('Đã xóa tất cả mã bản quyền!');
+    showAlert('Đã xóa tất cả mã bản quyền!');
     loadLicenseStats();
     loadAllKeys();
+  }).catch(error => {
+    console.error('Lỗi khi xóa mã:', error);
+    showAlert('Lỗi khi xóa mã: ' + error.message, 'error');
+  }).finally(() => {
+    btn.disabled = false;
+    btn.textContent = originalText;
   });
 });
 
@@ -447,7 +594,27 @@ document.getElementById('searchKey').addEventListener('input', function(e) {
 });
 
 // --- Đăng xuất ---
-document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  auth.signOut().then(() => {
+    window.location.href='index.html';
+  }).catch(error => {
+    console.error('Lỗi khi đăng xuất:', error);
+    showAlert('Lỗi khi đăng xuất: ' + error.message, 'error');
+  });
+});
+
+// Kiểm tra quyền truy cập khi trang tải xong
+window.addEventListener('load', () => {
+  // Kiểm tra xem có quyền đọc licenseKeys không
+  database.ref('licenseKeys').limitToFirst(1).once('value')
+    .then(snapshot => {
+      console.log('✅ Có quyền đọc licenseKeys');
+    })
+    .catch(error => {
+      console.error('❌ Lỗi quyền truy cập licenseKeys:', error);
+      showAlert('Cảnh báo: Không có quyền truy cập licenseKeys. Vui lòng kiểm tra Firebase Rules.', 'error');
+    });
+});
 </script>
 </body>
 </html>
