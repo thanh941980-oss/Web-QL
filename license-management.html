@@ -12,6 +12,7 @@
     input {width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;}
     button {padding:10px 15px; background:#3498db; color:#fff; border:none; border-radius:4px; cursor:pointer;}
     button:hover {background:#2980b9;}
+    button:disabled {background:#95a5a6; cursor:not-allowed;}
     table {width:100%; border-collapse:collapse; margin-top:10px;}
     th,td {border:1px solid #ddd; padding:10px; text-align:left;}
     th {background:#f2f2f2;}
@@ -33,7 +34,7 @@
     <label for="keyLength">Độ dài mã (6-20 ký tự)</label>
     <input type="number" id="keyLength" value="8" min="6" max="20">
   </div>
-  <button id="generateBtn">Tạo mã</button>
+  <button id="generateBtn" disabled>Tạo mã</button>
 </div><div class="table-container">
   <h3>📋 Danh sách mã bản quyền</h3>
   <div id="keysTable"></div>
@@ -51,9 +52,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
-
-// 🔑 Đăng nhập ẩn danh để có quyền auth != null
-auth.signInAnonymously().catch(err => console.error("Lỗi đăng nhập ẩn danh:", err));
 
 // Hàm tạo key ngẫu nhiên
 function generateKey(len=8){
@@ -98,6 +96,19 @@ function loadKeys(){
   });
 }
 
-loadKeys();
+// Chờ đăng nhập ẩn danh xong mới bật nút
+auth.onAuthStateChanged(user => {
+  if (user) {
+    console.log("✅ Đã đăng nhập:", user.uid);
+    document.getElementById('generateBtn').disabled = false;
+    loadKeys();
+  } else {
+    console.log("❌ Chưa đăng nhập");
+    document.getElementById('generateBtn').disabled = true;
+  }
+});
+
+// Tự động đăng nhập ẩn danh
+auth.signInAnonymously().catch(err => console.error("Lỗi đăng nhập ẩn danh:", err));
 </script></body>
 </html>
