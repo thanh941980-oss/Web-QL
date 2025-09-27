@@ -37,6 +37,22 @@
       th, td {padding: 8px 5px;}
       .small-btn {padding: 4px 8px;font-size: 0.75rem;margin: 2px 1px;display: block;width: 100%;}
     }
+    .license-container {
+        display: flex;
+        align-items: center;
+        gap: 5px; /* Khoảng cách giữa các phần tử */
+    }
+    .license-container input {
+        flex-grow: 1; /* Cho phép ô input chiếm hết không gian còn lại */
+    }
+    .paste-btn {
+        background: #2ecc71;
+        font-size: 0.9rem;
+        padding: 8px 12px;
+    }
+    .paste-btn:hover {
+        background: #27ae60;
+    }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -113,8 +129,11 @@
   <div class="card" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:6px;">
     <h3>Kích hoạt bản quyền</h3>
     <label for="licenseKey">Mã bản quyền:LH:0939.989.818</label>
-    <input type="text" id="licenseKey" placeholder="Nhập mã bản quyền" style="margin:5px 0; padding:5px; width:250px;">
-    <button id="activateLicenseBtn">Kích hoạt</button>
+    <div class="license-container">
+        <input type="text" id="licenseKey" placeholder="Nhập mã bản quyền">
+        <button id="pasteBtn" class="btn paste-btn">Dán</button>
+        <button id="activateLicenseBtn" class="btn">Kích hoạt</button>
+    </div>
     <p id="licenseMsg" style="margin-top:10px; font-size:0.9rem; color:#555;"></p>
   </div>
 </div>
@@ -156,7 +175,7 @@ auth.onAuthStateChanged(user => {
     loadPriceConfig();
     loadLicenseStatus(); // Tải trạng thái bản quyền của user
 
-    // CHUYỂN ĐOẠN MÃ XỬ LÝ NÚT VÀO ĐÂY
+    // Gán sự kiện cho nút kích hoạt
     document.getElementById('activateLicenseBtn').addEventListener('click', async () => {
       const key = document.getElementById('licenseKey').value.trim().toUpperCase();
       if (!key) {
@@ -170,14 +189,12 @@ auth.onAuthStateChanged(user => {
     
         if (licenseSnapshot.exists()) {
           const licenseData = licenseSnapshot.val();
-          // Kiểm tra xem mã này đã được sử dụng chưa
           if (licenseData.used) {
             document.getElementById('licenseMsg').textContent = '❌ Mã bản quyền đã được sử dụng!';
             document.getElementById('licenseMsg').style.color = 'red';
             return;
           }
           
-          // Cập nhật trạng thái đã cấp của mã trong node licenseKeys
           await licenseRef.update({
             used: true,
             usedBy: currentUser.uid,
@@ -185,7 +202,6 @@ auth.onAuthStateChanged(user => {
             usedAt: new Date().toISOString()
           });
           
-          // Lưu trạng thái bản quyền vào tài khoản người dùng
           await database.ref(`users/${currentUser.uid}/license`).set({
             licensed: true,
             key: key,
@@ -205,6 +221,19 @@ auth.onAuthStateChanged(user => {
       }
     });
     
+    // Gán sự kiện cho nút dán
+    document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+            // Lấy nội dung từ clipboard
+            const text = await navigator.clipboard.readText();
+            // Dán vào ô input
+            document.getElementById('licenseKey').value = text;
+        } catch (err) {
+            console.error('Lỗi khi truy cập clipboard:', err);
+            alert('Lỗi: Không thể truy cập clipboard. Vui lòng dán thủ công.');
+        }
+    });
+
   }
 });
 
@@ -226,7 +255,6 @@ document.getElementById('saveBankConfigBtn').addEventListener('click',()=>{
   const bankContent=document.getElementById('bankContent').value;
   if(!bankName||!bankAccount){alert("Vui lòng nhập đầy đủ");return;}
   
-  // Lưu theo user ID
   database.ref(`users/${currentUser.uid}/config/bank`).set({bankName,bankAccount,accountName,bankContent})
     .then(()=>alert("Lưu thành công"));
 });
@@ -245,7 +273,6 @@ function loadBankConfig(){
 
 // --- Rooms ---
 function loadRooms() {
-  // Load phòng theo user ID
   database.ref(`users/${currentUser.uid}/rooms`).once('value').then(snapshot => {
     const roomList = document.getElementById('roomList');
     roomList.innerHTML = '';
@@ -279,7 +306,6 @@ function loadRooms() {
 }
 
 function attachRoomActions() {
-  // Nút xóa
   document.querySelectorAll('.delete-room-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const roomId = btn.dataset.id;
@@ -296,7 +322,6 @@ function attachRoomActions() {
     });
   });
 
-  // Nút sửa
   document.querySelectorAll('.edit-room-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const roomId = btn.dataset.id;
@@ -315,14 +340,12 @@ function attachRoomActions() {
 
       try {
         if (newNumber !== roomId) {
-          // Kiểm tra số phòng mới đã tồn tại chưa
           const checkSnap = await database.ref(`users/${currentUser.uid}/rooms/` + newNumber).once('value');
           if (checkSnap.exists()) {
             alert('Số phòng này đã tồn tại!');
             return;
           }
           
-          // Tạo bản ghi mới và xóa bản ghi cũ
           await database.ref(`users/${currentUser.uid}/rooms/` + newNumber).set({
             price: parseInt(newPrice),
             area: parseInt(newArea),
@@ -330,7 +353,6 @@ function attachRoomActions() {
           });
           await database.ref(`users/${currentUser.uid}/rooms/` + roomId).remove();
         } else {
-          // Chỉ cập nhật thông tin
           await database.ref(`users/${currentUser.uid}/rooms/` + roomId).update({
             price: parseInt(newPrice),
             area: parseInt(newArea)
@@ -357,7 +379,6 @@ document.getElementById('addRoomBtn').addEventListener('click', async () => {
     return;
   }
 
-  // Kiểm tra giới hạn phòng (nếu chưa kích hoạt bản quyền)
   const licenseSnap = await database.ref(`users/${currentUser.uid}/license`).once('value');
   const isLicensed = licenseSnap.exists() && licenseSnap.val().licensed;
   
@@ -371,7 +392,6 @@ document.getElementById('addRoomBtn').addEventListener('click', async () => {
     }
   }
 
-  // Kiểm tra số phòng đã tồn tại
   const roomRef = database.ref(`users/${currentUser.uid}/rooms/` + roomNumber);
   const snapshot = await roomRef.once('value');
   if (snapshot.exists()) {
@@ -379,7 +399,6 @@ document.getElementById('addRoomBtn').addEventListener('click', async () => {
     return;
   }
 
-  // Thêm phòng mới
   try {
     await roomRef.set({
       price: Number(roomPrice),
@@ -388,12 +407,10 @@ document.getElementById('addRoomBtn').addEventListener('click', async () => {
     });
     alert('Thêm phòng thành công!');
     
-    // Xóa form
     document.getElementById('roomNumber').value = '';
     document.getElementById('roomPrice').value = '';
     document.getElementById('roomArea').value = '';
     
-    // Load lại danh sách
     loadRooms();
   } catch (err) {
     console.error(err);
