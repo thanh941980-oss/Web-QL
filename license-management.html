@@ -302,35 +302,47 @@ document.getElementById('generateKeysBtn').addEventListener('click', async funct
 });
 
 // Lưu mã vào database
+// Lưu mã vào database (phiên bản cải tiến)
 async function saveGeneratedKeys(keys) {
   const timestamp = new Date().toISOString();
-  const batch = {};
-  
-  keys.forEach(key => {
-    batch[key] = {
-      generatedAt: timestamp,
-      generatedBy: currentUser.uid,
-      used: false,
-      usedBy: null,
-      usedAt: null
-    };
-  });
   
   try {
-    await database.ref('licenseKeys').update(batch);
-    console.log('✅ Đã lưu mã vào database');
+    // Kiểm tra kết nối trước khi ghi
+    const connectedRef = database.ref('.info/connected');
+    const connected = await connectedRef.once('value');
+    
+    if (!connected.val()) {
+      throw new Error('Mất kết nối với database');
+    }
+    
+    // Ghi từng key để tránh lỗi batch write
+    const promises = keys.map(key => {
+      const keyData = {
+        generatedAt: timestamp,
+        generatedBy: currentUser.uid,
+        used: false,
+        usedBy: null,
+        usedAt: null
+      };
+      return database.ref('licenseKeys/' + key).set(keyData);
+    });
+    
+    await Promise.all(promises);
+    console.log('✅ Đã lưu thành công ' + keys.length + ' mã vào database');
+    
   } catch (error) {
     console.error('❌ Lỗi khi lưu mã:', error);
     
-    // Kiểm tra xem lỗi có phải do Rules không
+    // Phân loại lỗi chi tiết hơn
     if (error.code === 'PERMISSION_DENIED') {
       throw new Error('Không có quyền ghi vào database. Vui lòng kiểm tra Firebase Rules.');
+    } else if (error.message.includes('quota')) {
+      throw new Error('Database đã đạt giới hạn. Vui lòng nâng cấp gói dịch vụ.');
     } else {
       throw new Error('Lỗi kết nối database: ' + error.message);
     }
   }
 }
-
 // --- Sao chép mã ---
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('copy-single-btn')) {
