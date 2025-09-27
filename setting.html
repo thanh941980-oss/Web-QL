@@ -62,7 +62,6 @@
     </div>
 
     <div class="form-container">
-      <!-- Quản lý phòng -->
       <div class="tab-content active" id="room-management">
         <h3>Thêm phòng mới</h3>
         <div class="form-group"><label for="roomNumber">Số phòng</label><input type="text" id="roomNumber"></div>
@@ -73,7 +72,6 @@
         <div id="roomList"></div>
       </div>
 
-      <!-- Cấu hình giá -->
       <div class="tab-content" id="price-config">
         <h3>Cấu hình giá mặc định</h3>
         <div class="form-group"><label for="defaultElectricityPrice">Giá điện</label><input type="number" id="defaultElectricityPrice"></div>
@@ -83,7 +81,6 @@
         <button id="savePriceConfigBtn" class="btn">Lưu cấu hình</button>
       </div>
 
-      <!-- Cấu hình ngân hàng -->
       <div class="tab-content" id="bank-config">
         <h3>Cấu hình ngân hàng</h3>
         <div class="form-group">
@@ -103,7 +100,6 @@
         <button id="saveBankConfigBtn" class="btn">Lưu thông tin ngân hàng</button>
       </div>
 
-      <!-- Tài khoản -->
       <div class="tab-content" id="user-settings">
         <h3>Thông tin tài khoản</h3>
         <div class="form-group"><label for="userEmail">Email</label><input type="email" id="userEmail" disabled></div>
@@ -114,7 +110,6 @@
     </div>
   </div>
 
-  <!-- Form kích hoạt bản quyền -->
   <div class="card" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:6px;">
     <h3>Kích hoạt bản quyền</h3>
     <label for="licenseKey">Mã bản quyền:LH:0939.989.818</label>
@@ -160,6 +155,56 @@ auth.onAuthStateChanged(user => {
     loadRooms();
     loadPriceConfig();
     loadLicenseStatus(); // Tải trạng thái bản quyền của user
+
+    // CHUYỂN ĐOẠN MÃ XỬ LÝ NÚT VÀO ĐÂY
+    document.getElementById('activateLicenseBtn').addEventListener('click', async () => {
+      const key = document.getElementById('licenseKey').value.trim().toUpperCase();
+      if (!key) {
+        alert('Vui lòng nhập mã bản quyền!');
+        return;
+      }
+      
+      try {
+        const licenseRef = database.ref('licenseKeys/' + key);
+        const licenseSnapshot = await licenseRef.once('value');
+    
+        if (licenseSnapshot.exists()) {
+          const licenseData = licenseSnapshot.val();
+          // Kiểm tra xem mã này đã được sử dụng chưa
+          if (licenseData.used) {
+            document.getElementById('licenseMsg').textContent = '❌ Mã bản quyền đã được sử dụng!';
+            document.getElementById('licenseMsg').style.color = 'red';
+            return;
+          }
+          
+          // Cập nhật trạng thái đã cấp của mã trong node licenseKeys
+          await licenseRef.update({
+            used: true,
+            usedBy: currentUser.uid,
+            usedByEmail: currentUser.email,
+            usedAt: new Date().toISOString()
+          });
+          
+          // Lưu trạng thái bản quyền vào tài khoản người dùng
+          await database.ref(`users/${currentUser.uid}/license`).set({
+            licensed: true,
+            key: key,
+            activatedAt: new Date().toISOString()
+          });
+          
+          document.getElementById('licenseMsg').textContent = '✅ Đã kích hoạt bản quyền thành công!';
+          document.getElementById('licenseMsg').style.color = 'green';
+          document.getElementById('licenseStatus').textContent = 'Đã cấp bản quyền';
+        } else {
+          document.getElementById('licenseMsg').textContent = '❌ Mã bản quyền không hợp lệ!';
+          document.getElementById('licenseMsg').style.color = 'red';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Lỗi khi kích hoạt bản quyền.');
+      }
+    });
+    
   }
 });
 
@@ -392,55 +437,6 @@ document.getElementById('saveUserSettingsBtn').addEventListener('click',()=>{
       document.getElementById('userConfirmPassword').value='';
     }).catch(err=>{console.error(err);alert('Không thể đổi mật khẩu. Đăng nhập lại rồi thử.');});
   }
-});
-
-// --- License activation ---
-document.getElementById('activateLicenseBtn').addEventListener('click', async () => {
-    const key = document.getElementById('licenseKey').value.trim().toUpperCase();
-    if (!key) {
-        alert('Vui lòng nhập mã bản quyền!');
-        return;
-    }
-
-    try {
-        const licenseRef = database.ref('licenseKeys/' + key);
-        const licenseSnapshot = await licenseRef.once('value');
-
-        if (licenseSnapshot.exists()) {
-            const licenseData = licenseSnapshot.val();
-            // Kiểm tra xem mã này đã được sử dụng chưa
-            if (licenseData.used) {
-                document.getElementById('licenseMsg').textContent = '❌ Mã bản quyền đã được sử dụng!';
-                document.getElementById('licenseMsg').style.color = 'red';
-                return;
-            }
-
-            // Cập nhật trạng thái đã cấp của mã trong node licenseKeys
-            await licenseRef.update({
-                used: true,
-                usedBy: currentUser.uid,
-                usedByEmail: currentUser.email,
-                usedAt: new Date().toISOString()
-            });
-
-            // Lưu trạng thái bản quyền vào tài khoản người dùng
-            await database.ref(`users/${currentUser.uid}/license`).set({
-                licensed: true,
-                key: key,
-                activatedAt: new Date().toISOString()
-            });
-
-            document.getElementById('licenseMsg').textContent = '✅ Đã kích hoạt bản quyền thành công!';
-            document.getElementById('licenseMsg').style.color = 'green';
-            document.getElementById('licenseStatus').textContent = 'Đã cấp bản quyền';
-        } else {
-            document.getElementById('licenseMsg').textContent = '❌ Mã bản quyền không hợp lệ!';
-            document.getElementById('licenseMsg').style.color = 'red';
-        }
-    } catch (err) {
-        console.error(err);
-        alert('Lỗi khi kích hoạt bản quyền.');
-    }
 });
 
 // Load trạng thái bản quyền
