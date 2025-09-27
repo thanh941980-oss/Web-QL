@@ -96,7 +96,7 @@ function loadKeys(){
   });
 }
 
-// Chờ đăng nhập ẩn danh xong mới bật nút
+// Theo dõi trạng thái đăng nhập
 auth.onAuthStateChanged(user => {
   if (user) {
     console.log("✅ Đã đăng nhập:", user.uid);
@@ -107,8 +107,5 @@ auth.onAuthStateChanged(user => {
     document.getElementById('generateBtn').disabled = true;
   }
 });
-
-// Tự động đăng nhập ẩn danh
-auth.signInAnonymously().catch(err => console.error("Lỗi đăng nhập ẩn danh:", err));
 </script></body>
 </html>
