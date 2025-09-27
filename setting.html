@@ -396,46 +396,34 @@ document.getElementById('saveUserSettingsBtn').addEventListener('click',()=>{
 
 // --- License activation ---
 document.getElementById('activateLicenseBtn').addEventListener('click', async ()=>{
-  const key = document.getElementById('licenseKey').value.trim().toUpperCase();
-  if(!key){alert('Vui lòng nhập mã bản quyền!');return;}
-  
-  try{
-    // Kiểm tra mã bản quyền trong database (node licenseKeys)
-    const licenseCheck = await database.ref('licenseKeys/' + key).once('value');
-    
-    if(licenseCheck.exists()){
-      // Kiểm tra xem mã này đã được sử dụng chưa
-      const usedLicenseCheck = await database.ref('usedLicenseKeys/' + key).once('value');
-      
-      if(usedLicenseCheck.exists()){
-        document.getElementById('licenseMsg').textContent='❌ Mã bản quyền đã được sử dụng!';
-        document.getElementById('licenseMsg').style.color='red';
-        return;
-      }
-      
-      // Lưu bản quyền theo user ID
+  const key = document.getElementById('licenseKey').value.trim();
+  if (!key) {
+    alert('Vui lòng nhập mã bản quyền!');
+    return;
+  }
+  try {
+    // 1. Dò tìm mã bản quyền trong Firebase
+    const licenseRef = database.ref(`licenseKeys/${key}`);
+    const snap = await licenseRef.once('value');
+
+    // 2. Kiểm tra xem mã đó có tồn tại không
+    if (snap.exists()) {
+      // 3. Nếu tồn tại, lưu trạng thái kích hoạt vào tài khoản người dùng
       await database.ref(`users/${currentUser.uid}/license`).set({
         licensed: true,
         key: key,
         activatedAt: new Date().toISOString(),
         activatedBy: currentUser.email
       });
-      
-      // Đánh dấu mã đã được sử dụng
-      await database.ref('usedLicenseKeys/' + key).set({
-        usedBy: currentUser.uid,
-        usedByEmail: currentUser.email,
-        usedAt: new Date().toISOString()
-      });
-      
-      document.getElementById('licenseMsg').textContent='✅ Đã kích hoạt bản quyền thành công!';
-      document.getElementById('licenseMsg').style.color='green';
-      document.getElementById('licenseStatus').textContent='Đã cấp bản quyền';
-    }else{
-      document.getElementById('licenseMsg').textContent='❌ Mã bản quyền không hợp lệ!';
-      document.getElementById('licenseMsg').style.color='red';
+      document.getElementById('licenseMsg').textContent = '✅ Đã kích hoạt bản quyền thành công!';
+      document.getElementById('licenseMsg').style.color = 'green';
+      document.getElementById('licenseStatus').textContent = 'Đã cấp bản quyền';
+    } else {
+      // 4. Nếu không tồn tại, thông báo lỗi
+      document.getElementById('licenseMsg').textContent = '❌ Mã bản quyền không hợp lệ!';
+      document.getElementById('licenseMsg').style.color = 'red';
     }
-  }catch(err){
+  } catch(err) {
     console.error(err);
     alert('Lỗi khi kích hoạt bản quyền');
   }
