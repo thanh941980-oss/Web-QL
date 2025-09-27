@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cài đặt - Quản lý nhà trọ</title>
+  <style>
+    * {margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+    body {background:#f5f5f5;color:#333;line-height:1.6;}
+    header {background:#2c3e50;color:#fff;padding:1rem;display:flex;justify-content:space-between;align-items:center;}
+    .container {max-width:800px;margin:0 auto;padding:20px;}
+    .form-container {background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1);padding:20px;margin-top:20px;}
+    .form-group {margin-bottom:1.5rem;}
+    .form-group label {display:block;margin-bottom:.5rem;font-weight:500;}
+    .form-group input,.form-group select {width:100%;padding:.75rem;border:1px solid #ddd;border-radius:4px;font-size:1rem;}
+    .btn {display:inline-block;padding:.75rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:4px;font-size:1rem;cursor:pointer;transition:.3s;}
+    .btn:hover {background:#2980b9;}
+    .back-btn{background:#7f8c8d}.back-btn:hover{background:#95a5a6}
+    .logout-btn{background:#e74c3c}.logout-btn:hover{background:#c0392b}
+    .tab-container{margin-bottom:20px;}
+    .tab-buttons{display:flex;border-bottom:1px solid #ddd;flex-wrap:wrap;}
+    .tab-btn{padding:10px 20px;background:none;border:none;cursor:pointer;font-size:1rem;font-weight:500;color:#7f8c8d;border-bottom:3px solid transparent;}
+    .tab-btn.active{color:#3498db;border-bottom:3px solid #3498db;}
+    .tab-content{display:none;padding:20px 0;}
+    .tab-content.active{display:block;}
+    table {width: 100%;border-collapse: collapse;margin-top: 10px;font-size: 0.9rem;}
+    th, td {border: 1px solid #ddd;padding: 12px 10px;text-align: left;word-wrap: break-word;}
+    th {background-color: #f2f2f2;font-weight: 600;}
+    th:nth-child(1), td:nth-child(1) {width: 15%;}
+    th:nth-child(2), td:nth-child(2) {width: 30%;}
+    th:nth-child(3), td:nth-child(3) {width: 20%;}
+    th:nth-child(4), td:nth-child(4) {width: 15%;}
+    th:nth-child(5), td:nth-child(5) {width: 35%;text-align: center;}
+    .small-btn {padding: 6px 12px;font-size: 0.85rem;margin: 0 3px;}
+    @media (max-width: 600px) {
+      table {font-size: 0.8rem;}
+      th, td {padding: 8px 5px;}
+      .small-btn {padding: 4px 8px;font-size: 0.75rem;margin: 2px 1px;display: block;width: 100%;}
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<header>
+  <h1>Quản lý nhà trọ - Cài đặt</h1>
+  <div>
+    <button onclick="window.location.href='dashboard.html'" class="btn back-btn">Quay lại</button>
+    <button id="logoutBtn" class="btn logout-btn">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2>Cài đặt hệ thống</h2>
+  <div class="tab-container">
+    <div class="tab-buttons">
+      <button class="tab-btn active" data-tab="room-management">Quản lý phòng</button>
+      <button class="tab-btn" data-tab="price-config">Cấu hình giá</button>
+      <button class="tab-btn" data-tab="bank-config">Ngân hàng</button>
+      <button class="tab-btn" data-tab="user-settings">Tài khoản</button>
+    </div>
+
+    <div class="form-container">
+      <!-- Quản lý phòng -->
+      <div class="tab-content active" id="room-management">
+        <h3>Thêm phòng mới</h3>
+        <div class="form-group"><label for="roomNumber">Số phòng</label><input type="text" id="roomNumber"></div>
+        <div class="form-group"><label for="roomPrice">Giá phòng (VNĐ/tháng)</label><input type="number" id="roomPrice"></div>
+        <div class="form-group"><label for="roomArea">Diện tích (m²)</label><input type="number" id="roomArea"></div>
+        <button id="addRoomBtn" class="btn">Thêm phòng</button>
+        <h3 style="margin-top:30px;">Danh sách phòng</h3>
+        <div id="roomList"></div>
+      </div>
+
+      <!-- Cấu hình giá -->
+      <div class="tab-content" id="price-config">
+        <h3>Cấu hình giá mặc định</h3>
+        <div class="form-group"><label for="defaultElectricityPrice">Giá điện</label><input type="number" id="defaultElectricityPrice"></div>
+        <div class="form-group"><label for="defaultWaterPrice">Giá nước</label><input type="number" id="defaultWaterPrice"></div>
+        <div class="form-group"><label for="defaultWifiPrice">Giá WiFi</label><input type="number" id="defaultWifiPrice"></div>
+        <div class="form-group"><label for="defaultGarbagePrice">Giá rác</label><input type="number" id="defaultGarbagePrice"></div>
+        <button id="savePriceConfigBtn" class="btn">Lưu cấu hình</button>
+      </div>
+
+      <!-- Cấu hình ngân hàng -->
+      <div class="tab-content" id="bank-config">
+        <h3>Cấu hình ngân hàng</h3>
+        <div class="form-group">
+          <label for="bankName">Ngân hàng</label>
+          <select id="bankName">
+            <option value="VCB">Vietcombank</option>
+            <option value="TCB">Techcombank</option>
+            <option value="MB">MB Bank</option>
+            <option value="ACB">ACB</option>
+            <option value="BIDV">BIDV</option>
+            <option value="AGRIBANK">Agribank</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="bankAccount">Số tài khoản</label><input type="text" id="bankAccount"></div>
+        <div class="form-group"><label for="accountName">Tên chủ tài khoản</label><input type="text" id="accountName"></div>
+        <div class="form-group"><label for="bankContent">Nội dung mặc định</label><input type="text" id="bankContent" value="Thanh toán tiền tháng"></div>
+        <button id="saveBankConfigBtn" class="btn">Lưu thông tin ngân hàng</button>
+      </div>
+
+      <!-- Tài khoản -->
+      <div class="tab-content" id="user-settings">
+        <h3>Thông tin tài khoản</h3>
+        <div class="form-group"><label for="userEmail">Email</label><input type="email" id="userEmail" disabled></div>
+        <div class="form-group"><label for="userPassword">Mật khẩu mới</label><input type="password" id="userPassword"></div>
+        <div class="form-group"><label for="userConfirmPassword">Xác nhận mật khẩu</label><input type="password" id="userConfirmPassword"></div>
+        <button id="saveUserSettingsBtn" class="btn">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form kích hoạt bản quyền -->
+  <div class="card" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:6px;">
+    <h3>Kích hoạt bản quyền</h3>
+    <label for="licenseKey">Mã bản quyền:LH:0939.989.818</label>
+    <input type="text" id="licenseKey" placeholder="Nhập mã bản quyền" style="margin:5px 0; padding:5px; width:250px;">
+    <button id="activateLicenseBtn">Kích hoạt</button>
+    <p id="licenseMsg" style="margin-top:10px; font-size:0.9rem; color:#555;"></p>
+  </div>
+</div>
+
+<footer style="text-align:center; padding:10px; font-size:0.9rem;">
+  © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
+  <div style="font-size:0.75rem; margin-top:4px; color:#666;">
+    Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
+  </div>
+</footer>
+
+<script>
+// --- Firebase init ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAz38ll5L6nZOicZyQRFtKd0TuzohrLFws",
+  authDomain: "quan-ly-nha-tro-2a4bf.firebaseapp.com",
+  databaseURL: "https://quan-ly-nha-tro-2a4bf-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "quan-ly-nha-tro-2a4bf",
+  storageBucket: "quan-ly-nha-tro-2a4bf.firebasestorage.app",
+  messagingSenderId: "490747665921",
+  appId: "1:490747665921:web:48b0e2bad3a0f894c22a00"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
+
+// Biến lưu thông tin user hiện tại
+let currentUser = null;
+
+// --- Auth ---
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href='index.html';
+  } else {
+    currentUser = user;
+    document.getElementById('userEmail').value = user.email;
+    loadBankConfig();
+    loadRooms();
+    loadPriceConfig();
+    loadLicenseStatus(); // Tải trạng thái bản quyền của user
+  }
+});
+
+// --- Tabs ---
+document.querySelectorAll('.tab-btn').forEach(btn =>
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-content').forEach(tab=>tab.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    btn.classList.add('active');
+  })
+);
+
+// --- Bank config ---
+document.getElementById('saveBankConfigBtn').addEventListener('click',()=>{
+  const bankName=document.getElementById('bankName').value;
+  const bankAccount=document.getElementById('bankAccount').value;
+  const accountName=document.getElementById('accountName').value;
+  const bankContent=document.getElementById('bankContent').value;
+  if(!bankName||!bankAccount){alert("Vui lòng nhập đầy đủ");return;}
+  
+  // Lưu theo user ID
+  database.ref(`users/${currentUser.uid}/config/bank`).set({bankName,bankAccount,accountName,bankContent})
+    .then(()=>alert("Lưu thành công"));
+});
+
+function loadBankConfig(){
+  database.ref(`users/${currentUser.uid}/config/bank`).once('value').then(snap=>{
+    if(snap.exists()){
+      const d=snap.val();
+      document.getElementById('bankName').value=d.bankName;
+      document.getElementById('bankAccount').value=d.bankAccount;
+      document.getElementById('accountName').value=d.accountName || '';
+      document.getElementById('bankContent').value=d.bankContent;
+    }
+  });
+}
+
+// --- Rooms ---
+function loadRooms() {
+  // Load phòng theo user ID
+  database.ref(`users/${currentUser.uid}/rooms`).once('value').then(snapshot => {
+    const roomList = document.getElementById('roomList');
+    roomList.innerHTML = '';
+    
+    if (snapshot.exists()) {
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr>
+        <th>Số phòng</th><th>Giá phòng</th><th>Diện tích</th><th>Trạng thái</th><th>Thao tác</th>
+      </tr></thead><tbody></tbody>`;
+      
+      const tbody = table.querySelector('tbody');
+      snapshot.forEach(child => {
+        const room = child.val();
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${child.key}</td>
+          <td>${room.price ? room.price.toLocaleString('vi-VN') : '0'} VNĐ</td>
+          <td>${room.area || '0'} m²</td>
+          <td>${room.status === 'available' ? 'Trống' : 'Đã thuê'}</td>
+          <td>
+            <button class="btn small-btn edit-room-btn" data-id="${child.key}">Sửa</button>
+            <button class="btn small-btn delete-room-btn" data-id="${child.key}">Xóa</button>
+          </td>`;
+        tbody.appendChild(row);
+      });
+      roomList.appendChild(table);
+      attachRoomActions();
+    } else {
+      roomList.innerHTML = '<p>Chưa có phòng nào.</p>';
+    }
+  });
+}
+
+function attachRoomActions() {
+  // Nút xóa
+  document.querySelectorAll('.delete-room-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const roomId = btn.dataset.id;
+      if (confirm("Bạn có chắc muốn xóa phòng này?")) {
+        try {
+          await database.ref(`users/${currentUser.uid}/rooms/` + roomId).remove();
+          alert("Đã xóa phòng!");
+          loadRooms();
+        } catch (err) {
+          console.error(err);
+          alert("Không thể xóa phòng.");
+        }
+      }
+    });
+  });
+
+  // Nút sửa
+  document.querySelectorAll('.edit-room-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const roomId = btn.dataset.id;
+      const snap = await database.ref(`users/${currentUser.uid}/rooms/` + roomId).once('value');
+      if (!snap.exists()) return;
+      const room = snap.val();
+
+      const newNumber = prompt("Số phòng:", roomId);
+      if (!newNumber) return;
+      
+      const newPrice = prompt("Giá phòng:", room.price || '');
+      if (!newPrice) return;
+      
+      const newArea = prompt("Diện tích (m²):", room.area || '');
+      if (!newArea) return;
+
+      try {
+        if (newNumber !== roomId) {
+          // Kiểm tra số phòng mới đã tồn tại chưa
+          const checkSnap = await database.ref(`users/${currentUser.uid}/rooms/` + newNumber).once('value');
+          if (checkSnap.exists()) {
+            alert('Số phòng này đã tồn tại!');
+            return;
+          }
+          
+          // Tạo bản ghi mới và xóa bản ghi cũ
+          await database.ref(`users/${currentUser.uid}/rooms/` + newNumber).set({
+            price: parseInt(newPrice),
+            area: parseInt(newArea),
+            status: room.status || 'available'
+          });
+          await database.ref(`users/${currentUser.uid}/rooms/` + roomId).remove();
+        } else {
+          // Chỉ cập nhật thông tin
+          await database.ref(`users/${currentUser.uid}/rooms/` + roomId).update({
+            price: parseInt(newPrice),
+            area: parseInt(newArea)
+          });
+        }
+        
+        alert("Đã cập nhật phòng!");
+        loadRooms();
+      } catch (err) {
+        console.error(err);
+        alert("Không thể sửa phòng.");
+      }
+    });
+  });
+}
+
+document.getElementById('addRoomBtn').addEventListener('click', async () => {
+  const roomNumber = document.getElementById('roomNumber').value.trim();
+  const roomPrice = document.getElementById('roomPrice').value.trim();
+  const roomArea = document.getElementById('roomArea').value.trim();
+
+  if (!roomNumber || !roomPrice || !roomArea) {
+    alert('Vui lòng nhập đầy đủ Số phòng, Giá phòng và Diện tích.');
+    return;
+  }
+
+  // Kiểm tra giới hạn phòng (nếu chưa kích hoạt bản quyền)
+  const licenseSnap = await database.ref(`users/${currentUser.uid}/license`).once('value');
+  const isLicensed = licenseSnap.exists() && licenseSnap.val().licensed;
+  
+  if (!isLicensed) {
+    const roomsSnap = await database.ref(`users/${currentUser.uid}/rooms`).once('value');
+    const roomCount = roomsSnap.exists() ? Object.keys(roomsSnap.val()).length : 0;
+    
+    if (roomCount >= 3) {
+      alert('Bản miễn phí chỉ cho phép tối đa 3 phòng. Vui lòng kích hoạt bản quyền để thêm nhiều phòng hơn.');
+      return;
+    }
+  }
+
+  // Kiểm tra số phòng đã tồn tại
+  const roomRef = database.ref(`users/${currentUser.uid}/rooms/` + roomNumber);
+  const snapshot = await roomRef.once('value');
+  if (snapshot.exists()) {
+    alert('Lỗi: Số phòng này đã tồn tại. Vui lòng chọn số phòng khác.');
+    return;
+  }
+
+  // Thêm phòng mới
+  try {
+    await roomRef.set({
+      price: Number(roomPrice),
+      area: Number(roomArea),
+      status: 'available'
+    });
+    alert('Thêm phòng thành công!');
+    
+    // Xóa form
+    document.getElementById('roomNumber').value = '';
+    document.getElementById('roomPrice').value = '';
+    document.getElementById('roomArea').value = '';
+    
+    // Load lại danh sách
+    loadRooms();
+  } catch (err) {
+    console.error(err);
+    alert('Lỗi khi thêm phòng. Vui lòng thử lại.');
+  }
+});
+
+// --- Price config ---
+function loadPriceConfig(){
+  database.ref(`users/${currentUser.uid}/config/prices`).once('value').then(snap=>{
+    if(snap.exists()){
+      const c=snap.val();
+      document.getElementById('defaultElectricityPrice').value=c.electricity??3500;
+      document.getElementById('defaultWaterPrice').value=c.water??20000;
+      document.getElementById('defaultWifiPrice').value=c.wifi??50000;
+      document.getElementById('defaultGarbagePrice').value=c.garbage??20000;
+    }
+  });
+}
+
+document.getElementById('savePriceConfigBtn').addEventListener('click',()=>{
+  const electricity=parseInt(document.getElementById('defaultElectricityPrice').value)||0;
+  const water=parseInt(document.getElementById('defaultWaterPrice').value)||0;
+  const wifi=parseInt(document.getElementById('defaultWifiPrice').value)||0;
+  const garbage=parseInt(document.getElementById('defaultGarbagePrice').value)||0;
+  database.ref(`users/${currentUser.uid}/config/prices`).set({electricity,water,wifi,garbage})
+    .then(()=>alert('Đã lưu cấu hình giá'));
+});
+
+// --- User settings ---
+document.getElementById('saveUserSettingsBtn').addEventListener('click',()=>{
+  const newPass=document.getElementById('userPassword').value;
+  const confirmPass=document.getElementById('userConfirmPassword').value;
+  if(!newPass||!confirmPass){alert('Vui lòng nhập mật khẩu mới và xác nhận!');return;}
+  if(newPass!==confirmPass){alert('Mật khẩu xác nhận không khớp!');return;}
+  const user=auth.currentUser;
+  if(user){
+    user.updatePassword(newPass).then(()=>{
+      alert('Đổi mật khẩu thành công!');
+      document.getElementById('userPassword').value='';
+      document.getElementById('userConfirmPassword').value='';
+    }).catch(err=>{console.error(err);alert('Không thể đổi mật khẩu. Đăng nhập lại rồi thử.');});
+  }
+});
+
+// --- License activation ---
+document.getElementById('activateLicenseBtn').addEventListener('click', async ()=>{
+  const key=document.getElementById('licenseKey').value.trim();
+  if(!key){alert('Vui lòng nhập mã bản quyền!');return;}
+  try{
+    const VALID_KEYS=['VIP123','PRO999','NHATRO2025'];
+    if(VALID_KEYS.includes(key)){
+      // Lưu bản quyền theo user ID
+      await database.ref(`users/${currentUser.uid}/license`).set({
+        licensed:true,
+        key:key,
+        activatedAt:new Date().toISOString(),
+        activatedBy:currentUser.email
+      });
+      document.getElementById('licenseMsg').textContent='✅ Đã kích hoạt bản quyền thành công!';
+      document.getElementById('licenseMsg').style.color='green';
+      document.getElementById('licenseStatus').textContent='Đã cấp bản quyền';
+    }else{
+      document.getElementById('licenseMsg').textContent='❌ Mã bản quyền không hợp lệ!';
+      document.getElementById('licenseMsg').style.color='red';
+    }
+  }catch(err){console.error(err);alert('Lỗi khi kích hoạt bản quyền');}
+});
+
+// Load trạng thái bản quyền
+function loadLicenseStatus(){
+  database.ref(`users/${currentUser.uid}/license`).on('value',snap=>{
+    if(snap.exists()&&snap.val().licensed){
+      document.getElementById('licenseStatus').textContent='Đã cấp bản quyền';
+    }else{
+      document.getElementById('licenseStatus').textContent='Miễn phí';
+    }
+  });
+}
+
+// --- Misc ---
+document.getElementById('logoutBtn').addEventListener('click',()=>auth.signOut());
+document.getElementById('copyrightYear').textContent=new Date().getFullYear();
+</script>
+</body>
+</html>

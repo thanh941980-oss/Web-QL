@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Danh sách người thuê phòng</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f5f5; color: #333; line-height: 1.6; }
+    header { background-color: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-top: 20px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #3498db; color: white; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.3s; }
+    .back-btn { background-color: #7f8c8d; color: white; }
+    .back-btn:hover { background-color: #95a5a6; }
+    .logout-btn { background-color: #e74c3c; color: white; }
+    .logout-btn:hover { background-color: #c0392b; }
+    .delete-btn { background-color: #e74c3c; color: white; padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+    .delete-btn:hover { background-color: #c0392b; }
+    .actions-cell { width: 100px; text-align: center; }
+    @media (max-width: 768px) { 
+      header { flex-direction: column; align-items: flex-start; gap: 10px; } 
+      .container { padding: 10px; } 
+      .btn { width: 100%; margin-bottom: 5px; }
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Quản lý nhà trọ - Người thuê phòng</h1>
+    <div>
+      <button onclick="window.location.href='dashboard.html'" class="btn back-btn">Quay lại</button>
+      <button id="logoutBtn" class="btn logout-btn">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <h2>Danh sách người thuê phòng</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Phòng</th>
+            <th>Người thuê</th>
+            <th>CCCD/CMND</th>
+            <th>Ngày đặt</th>
+            <th class="actions-cell">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="tenantList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz38ll5L6nZOicZyQRFtKd0TuzohrLFws",
+      authDomain: "quan-ly-nha-tro-2a4bf.firebaseapp.com",
+      databaseURL: "https://quan-ly-nha-tro-2a4bf-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "quan-ly-nha-tro-2a4bf",
+      storageBucket: "quan-ly-nha-tro-2a4bf.firebasestorage.app",
+      messagingSenderId: "490747665921",
+      appId: "1:490747665921:web:48b0e2bad3a0f894c22a00"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    let currentUser = null;
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "index.html";
+      } else {
+        currentUser = user;
+        console.log('User ID:', user.uid);
+        loadTenants();
+        loadLicenseStatus();
+      }
+    });
+
+    function loadTenants() {
+      const bookingsRef = database.ref(`users/${currentUser.uid}/bookings`);
+      
+      console.log('Loading bookings from:', `users/${currentUser.uid}/bookings`);
+      
+      bookingsRef.on("value", snapshot => {
+        const tbody = document.getElementById("tenantList");
+        tbody.innerHTML = "";
+        
+        console.log('Bookings snapshot:', snapshot.val());
+        
+        if (!snapshot.exists()) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td colspan="5" style="text-align: center; padding: 20px;">
+              Không có dữ liệu người thuê
+            </td>
+          `;
+          tbody.appendChild(tr);
+          return;
+        }
+        
+        snapshot.forEach(child => {
+          const data = child.val();
+          const bookingId = child.key;
+          
+          console.log('Booking found:', bookingId, data);
+          
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${data.roomId}</td>
+            <td>${data.customerName || 'Chưa có tên'}</td>
+            <td>${data.idNumber || 'Chưa có CCCD'}</td>
+            <td>${data.bookingDate ? new Date(data.bookingDate).toLocaleString("vi-VN") : 'Chưa có ngày'}</td>
+            <td class="actions-cell">
+              <button class="btn delete-btn" onclick="deleteTenant('${bookingId}')">Xóa</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }, error => {
+        console.error('Lỗi khi load tenants:', error);
+        const tbody = document.getElementById("tenantList");
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 20px; color: red;">
+              Lỗi khi tải dữ liệu: ${error.message}
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function deleteTenant(bookingId) {
+      if (confirm("Bạn có chắc chắn muốn xóa người thuê này?")) {
+        // Cập nhật trạng thái phòng về available trước khi xóa booking
+        database.ref(`users/${currentUser.uid}/bookings/${bookingId}`).once('value')
+          .then(snapshot => {
+            const bookingData = snapshot.val();
+            if (bookingData && bookingData.roomId) {
+              // Cập nhật phòng về trạng thái trống
+              return database.ref(`users/${currentUser.uid}/rooms/${bookingData.roomId}`).update({
+                status: 'available'
+              }).then(() => {
+                // Xóa booking
+                return database.ref(`users/${currentUser.uid}/bookings/${bookingId}`).remove();
+              });
+            } else {
+              // Nếu không có roomId, chỉ xóa booking
+              return database.ref(`users/${currentUser.uid}/bookings/${bookingId}`).remove();
+            }
+          })
+          .then(() => {
+            alert("Đã xóa người thuê thành công!");
+          })
+          .catch(error => {
+            console.error("Lỗi khi xóa người thuê:", error);
+            alert("Có lỗi xảy ra khi xóa người thuê. Vui lòng thử lại.");
+          });
+      }
+    }
+
+    function loadLicenseStatus(){
+      database.ref(`users/${currentUser.uid}/license`).on('value',snap=>{
+        if(snap.exists()&&snap.val().licensed){
+          document.getElementById('licenseStatus').textContent='Đã cấp bản quyền';
+        }else{
+          document.getElementById('licenseStatus').textContent='Miễn phí';
+        }
+      });
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      auth.signOut().then(() => window.location.href = "index.html");
+    });
+  </script>
+
+<footer style="text-align:center; padding:10px; font-size:0.9rem;">
+  © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
+  <div style="font-size:0.75rem; margin-top:4px; color:#666;">
+    Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
+  </div>
+</footer>
+<script>
+  document.getElementById('copyrightYear').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
