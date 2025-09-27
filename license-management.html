@@ -52,6 +52,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
 
+// 🔑 Đăng nhập ẩn danh để có quyền auth != null
+auth.signInAnonymously().catch(err => console.error("Lỗi đăng nhập ẩn danh:", err));
+
 // Hàm tạo key ngẫu nhiên
 function generateKey(len=8){
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
