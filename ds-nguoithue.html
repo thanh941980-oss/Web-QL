@@ -50,6 +50,7 @@
             <th>Người thuê</th>
             <th>CCCD/CMND</th>
             <th>Ngày đặt</th>
+            <th>Người ở chung</th>
             <th class="actions-cell">Thao tác</th>
           </tr>
         </thead>
@@ -102,7 +103,7 @@
         if (!snapshot.exists()) {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td colspan="5" style="text-align: center; padding: 20px;">
+            <td colspan="6" style="text-align: center; padding: 20px;">
               Không có dữ liệu người thuê
             </td>
           `;
@@ -122,6 +123,7 @@
             <td>${data.customerName || 'Chưa có tên'}</td>
             <td>${data.idNumber || 'Chưa có CCCD'}</td>
             <td>${data.bookingDate ? new Date(data.bookingDate).toLocaleString("vi-VN") : 'Chưa có ngày'}</td>
+            <td>${data.coTenants || '---'}</td>
             <td class="actions-cell">
               <button class="btn delete-btn" onclick="deleteTenant('${bookingId}')">Xóa</button>
             </td>
@@ -133,7 +135,7 @@
         const tbody = document.getElementById("tenantList");
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" style="text-align: center; padding: 20px; color: red;">
+            <td colspan="6" style="text-align: center; padding: 20px; color: red;">
               Lỗi khi tải dữ liệu: ${error.message}
             </td>
           </tr>
@@ -143,20 +145,16 @@
 
     function deleteTenant(bookingId) {
       if (confirm("Bạn có chắc chắn muốn xóa người thuê này?")) {
-        // Cập nhật trạng thái phòng về available trước khi xóa booking
         database.ref(`users/${currentUser.uid}/bookings/${bookingId}`).once('value')
           .then(snapshot => {
             const bookingData = snapshot.val();
             if (bookingData && bookingData.roomId) {
-              // Cập nhật phòng về trạng thái trống
               return database.ref(`users/${currentUser.uid}/rooms/${bookingData.roomId}`).update({
                 status: 'available'
               }).then(() => {
-                // Xóa booking
                 return database.ref(`users/${currentUser.uid}/bookings/${bookingId}`).remove();
               });
             } else {
-              // Nếu không có roomId, chỉ xóa booking
               return database.ref(`users/${currentUser.uid}/bookings/${bookingId}`).remove();
             }
           })
@@ -197,4 +195,3 @@
 
 </body>
 </html>
-
