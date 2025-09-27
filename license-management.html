@@ -17,12 +17,14 @@
     th {background:#f2f2f2;}
     .key-used {background:#d4edda;}
     .key-unused {background:#fff3cd;}
+    .copy-btn {margin-left:10px; padding:5px 10px; font-size:12px;}
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
-<h1>Quản lý mã bản quyền</h1><div class="form-container">
+<h1>Quản lý mã bản quyền</h1>
+<div class="form-container">
   <h3>📝 Tạo mã bản quyền mới</h3>
   <div class="form-group">
     <label for="keyCount">Số lượng mã</label>
@@ -33,10 +35,12 @@
     <input type="number" id="keyLength" value="8" min="6" max="20">
   </div>
   <button id="generateBtn">Tạo mã</button>
-</div><div class="table-container">
+</div>
+<div class="table-container">
   <h3>📋 Danh sách mã bản quyền</h3>
   <div id="keysTable"></div>
-</div><script>
+</div>
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyB7qqxKGsD-enKgzeAvGQ8CwtTsFWy01OM",
   authDomain: "web-quan-ly.firebaseapp.com",
@@ -45,54 +49,21 @@ const firebaseConfig = {
   storageBucket: "web-quan-ly.firebasestorage.app",
   messagingSenderId: "623183081841",
   appId: "1:623183081841:web:72cee8d908d383b65e46d0"
-};
+};firebase.initializeApp(firebaseConfig); const database = firebase.database();
 
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+// Hàm tạo key ngẫu nhiên function generateKey(len=8){ const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let res = ""; for(let i=0;i<len;i++) res += chars.charAt(Math.floor(Math.random()*chars.length)); return res; }
 
-// Hàm tạo key ngẫu nhiên
-function generateKey(len=8){
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let res = "";
-  for(let i=0;i<len;i++) res += chars.charAt(Math.floor(Math.random()*chars.length));
-  return res;
-}
+// Tạo và lưu key async function createKeys(){ const count = parseInt(document.getElementById('keyCount').value)||1; const length = parseInt(document.getElementById('keyLength').value)||8; const timestamp = new Date().toISOString();
 
-// Tạo và lưu key
-async function createKeys(){
-  const count = parseInt(document.getElementById('keyCount').value)||1;
-  const length = parseInt(document.getElementById('keyLength').value)||8;
-  const timestamp = new Date().toISOString();
-
-  for(let i=0;i<count;i++){
-    const key = generateKey(length);
-    const data = { generatedAt: timestamp, used:false, usedAt:null };
-    await database.ref('licenseKeys/'+key).set(data);
-  }
-  loadKeys();
-}
+for(let i=0;i<count;i++){ const key = generateKey(length); const data = { generatedAt: timestamp, used:false, usedAt:null }; await database.ref('licenseKeys/'+key).set(data); } loadKeys(); }
 
 document.getElementById('generateBtn').addEventListener('click', createKeys);
 
-// Hiển thị key
-function loadKeys(){
-  database.ref('licenseKeys').on('value', snap => {
-    if(!snap.exists()){ document.getElementById('keysTable').innerHTML = '<p>Chưa có mã nào.</p>'; return; }
-    const keys = snap.val();
-    let html = `<table><thead><tr><th>Mã</th><th>Trạng thái</th><th>Ngày tạo</th><th>Ngày cấp</th></tr></thead><tbody>`;
-    Object.entries(keys).forEach(([k,v])=>{
-      html += `<tr class="${v.used?'key-used':'key-unused'}">
-        <td><code>${k}</code></td>
-        <td>${v.used?'✅ Đã cấp':'🔄 Chưa cấp'}</td>
-        <td>${v.generatedAt?new Date(v.generatedAt).toLocaleDateString('vi-VN'):'---'}</td>
-        <td>${v.usedAt?new Date(v.usedAt).toLocaleDateString('vi-VN'):'---'}</td>
-      </tr>`;
-    });
-    html += `</tbody></table>`;
-    document.getElementById('keysTable').innerHTML = html;
-  });
-}
+// Copy key function copyKey(key) { navigator.clipboard.writeText(key).then(() => { alert("Đã sao chép: " + key); }).catch(err => { console.error("Lỗi sao chép:", err); }); }
 
-loadKeys();
-</script></body>
+// Hiển thị key function loadKeys(){ database.ref('licenseKeys').on('value', snap => { if(!snap.exists()){ document.getElementById('keysTable').innerHTML = '<p>Chưa có mã nào.</p>'; return; } const keys = snap.val(); let html = <table><thead><tr><th>Mã</th><th>Trạng thái</th><th>Ngày tạo</th><th>Ngày cấp</th><th>Hành động</th></tr></thead><tbody>; Object.entries(keys).forEach(([k,v])=>{ html += <tr class="${v.used?'key-used':'key-unused'}"> <td><code>${k}</code></td> <td>${v.used?'✅ Đã cấp':'🔄 Chưa cấp'}</td> <td>${v.generatedAt?new Date(v.generatedAt).toLocaleDateString('vi-VN'):'---'}</td> <td>${v.usedAt?new Date(v.usedAt).toLocaleDateString('vi-VN'):'---'}</td> <td><button class="copy-btn" onclick="copyKey('${k}')">📋 Sao chép</button></td> </tr>; }); html += </tbody></table>; document.getElementById('keysTable').innerHTML = html; }); }
+
+loadKeys(); </script>
+
+</body>
 </html>
