@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý bản quyền - Admin</title>
+  <style>
+    * {margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+    body {background:#f5f5f5;color:#333;line-height:1.6;}
+    header {background:#2c3e50;color:#fff;padding:1rem;display:flex;justify-content:space-between;align-items:center;}
+    .container {max-width:1000px;margin:0 auto;padding:20px;}
+    .form-container {background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1);padding:20px;margin-top:20px;}
+    .form-group {margin-bottom:1.5rem;}
+    .form-group label {display:block;margin-bottom:.5rem;font-weight:500;}
+    .form-group input,.form-group select,.form-group textarea {width:100%;padding:.75rem;border:1px solid #ddd;border-radius:4px;font-size:1rem;}
+    .btn {display:inline-block;padding:.75rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:4px;font-size:1rem;cursor:pointer;transition:.3s;}
+    .btn:hover {background:#2980b9;}
+    .back-btn{background:#7f8c8d}.back-btn:hover{background:#95a5a6}
+    .logout-btn{background:#e74c3c}.logout-btn:hover{background:#c0392b}
+    .success-btn{background:#27ae60}.success-btn:hover{background:#219653}
+    .warning-btn{background:#f39c12}.warning-btn:hover{background:#e67e22}
+    
+    .card {background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1);padding:20px;margin-bottom:20px;}
+    .stats-container {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px;}
+    .stat-card {background:#f8f9fa;padding:15px;border-radius:6px;text-align:center;}
+    .stat-number {font-size:2rem;font-weight:bold;color:#3498db;}
+    .stat-label {font-size:0.9rem;color:#666;}
+    
+    table {width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
+    th,td {border:1px solid #ddd;padding:12px 10px;text-align:left;}
+    th {background-color:#f2f2f2;font-weight:600;}
+    .key-used {background-color:#d4edda;}
+    .key-unused {background-color:#fff3cd;}
+    
+    .key-list {max-height:400px;overflow-y:auto;margin-top:15px;}
+    .key-item {padding:10px;margin:5px 0;background:#f8f9fa;border-radius:4px;font-family:monospace;}
+    
+    .admin-notice {background:#fff3cd;border-left:4px solid #ffc107;padding:10px;margin:10px 0;}
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<header>
+  <h1>Quản lý bản quyền - Trang Admin</h1>
+  <div>
+    <button onclick="window.location.href='dashboard.html'" class="btn back-btn">Bảng điều khiển</button>
+    <button id="logoutBtn" class="btn logout-btn">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="admin-notice">
+    <strong>⚠️ Trang quản trị - Chỉ dành cho Admin</strong>
+    <p>Trang này cho phép bạn tạo và quản lý mã bản quyền cho người dùng.</p>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-number" id="totalKeys">0</div>
+      <div class="stat-label">Tổng số mã</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="usedKeys">0</div>
+      <div class="stat-label">Đã sử dụng</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="availableKeys">0</div>
+      <div class="stat-label">Có sẵn</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="activeUsers">0</div>
+      <div class="stat-label">User đã kích hoạt</div>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <h3>📝 Tạo mã bản quyền mới</h3>
+    
+    <div class="form-group">
+      <label for="keyCount">Số lượng mã cần tạo</label>
+      <input type="number" id="keyCount" value="10" min="1" max="1000">
+    </div>
+    
+    <div class="form-group">
+      <label for="keyLength">Độ dài mã (6-20 ký tự)</label>
+      <input type="number" id="keyLength" value="8" min="6" max="20">
+    </div>
+    
+    <div class="form-group">
+      <label for="keyPrefix">Tiền tố (tùy chọn)</label>
+      <input type="text" id="keyPrefix" placeholder="VD: VIP, PRO, NHA" maxlength="5">
+    </div>
+    
+    <div class="form-group">
+      <label for="keySuffix">Hậu tố (tùy chọn)</label>
+      <input type="text" id="keySuffix" placeholder="VD: 2025, TRO, KEY" maxlength="5">
+    </div>
+    
+    <button id="generateKeysBtn" class="btn success-btn">🎯 Tạo mã bản quyền</button>
+    
+    <div id="generatedKeys" class="card" style="display: none; margin-top: 20px;">
+      <h4>✅ Mã bản quyền đã tạo thành công!</h4>
+      <div id="keysList" class="key-list"></div>
+      <button id="copyKeysBtn" class="btn small-btn" style="margin-top: 10px;">📋 Sao chép tất cả</button>
+      <button id="exportKeysBtn" class="btn small-btn warning-btn" style="margin-top: 10px;">💾 Xuất file TXT</button>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <h3>📋 Danh sách mã bản quyền</h3>
+    
+    <div class="form-group">
+      <input type="text" id="searchKey" placeholder="🔍 Tìm kiếm mã bản quyền...">
+    </div>
+    
+    <div id="keysTableContainer"></div>
+  </div>
+
+  <div class="form-container">
+    <h3>👥 User đã kích hoạt bản quyền</h3>
+    <div id="activeUsersList"></div>
+  </div>
+
+  <div class="card">
+    <h3>⚙️ Quản lý hệ thống</h3>
+    <button id="deleteUsedKeysBtn" class="btn warning-btn">🗑️ Xóa mã đã sử dụng</button>
+    <button id="deleteAllKeysBtn" class="btn logout-btn">💥 Xóa tất cả mã</button>
+    <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+      Lưu ý: Các thao tác xóa không thể hoàn tác. Hãy sao lưu trước khi xóa.
+    </p>
+  </div>
+</div>
+
+<script>
+// --- Firebase init ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAz38ll5L6nZOicZyQRFtKd0TuzohrLFws",
+  authDomain: "quan-ly-nha-tro-2a4bf.firebaseapp.com",
+  databaseURL: "https://quan-ly-nha-tro-2a4bf-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "quan-ly-nha-tro-2a4bf",
+  storageBucket: "quan-ly-nha-tro-2a4bf.firebasestorage.app",
+  messagingSenderId: "490747665921",
+  appId: "1:490747665921:web:48b0e2bad3a0f894c22a00"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
+
+let currentUser = null;
+
+// --- Auth ---
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href='index.html';
+  } else {
+    currentUser = user;
+    loadLicenseStats();
+    loadAllKeys();
+    loadActiveUsers();
+  }
+});
+
+// --- Hàm tạo mã bản quyền ---
+function generateLicenseKey(length = 8, prefix = '', suffix = '') {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  if (prefix) result = prefix + result;
+  if (suffix) result = result + suffix;
+  
+  return result;
+}
+
+// --- Tạo mã mới ---
+document.getElementById('generateKeysBtn').addEventListener('click', async function() {
+  const count = parseInt(document.getElementById('keyCount').value) || 10;
+  const length = parseInt(document.getElementById('keyLength').value) || 8;
+  const prefix = document.getElementById('keyPrefix').value.trim();
+  const suffix = document.getElementById('keySuffix').value.trim();
+  
+  if (count > 1000) {
+    alert('Số lượng mã tối đa là 1000!');
+    return;
+  }
+  
+  const keys = [];
+  for (let i = 0; i < count; i++) {
+    let key;
+    let attempts = 0;
+    
+    // Đảm bảo mã không trùng
+    do {
+      key = generateLicenseKey(length, prefix, suffix);
+      attempts++;
+      if (attempts > 100) {
+        alert('Không thể tạo mã không trùng sau 100 lần thử!');
+        return;
+      }
+    } while (keys.includes(key));
+    
+    keys.push(key);
+  }
+  
+  // Hiển thị mã
+  const keysList = document.getElementById('keysList');
+  keysList.innerHTML = keys.map(key => 
+    `<div class="key-item">
+      <span>${key}</span>
+      <button class="btn small-btn copy-single-btn" data-key="${key}" style="float: right;">Sao chép</button>
+    </div>`
+  ).join('');
+  
+  document.getElementById('generatedKeys').style.display = 'block';
+  
+  // Lưu vào database
+  await saveGeneratedKeys(keys);
+  alert(`✅ Đã tạo thành công ${count} mã bản quyền!`);
+});
+
+// Lưu mã vào database
+async function saveGeneratedKeys(keys) {
+  const timestamp = new Date().toISOString();
+  const batch = {};
+  
+  keys.forEach(key => {
+    batch[key] = {
+      generatedAt: timestamp,
+      generatedBy: currentUser.uid,
+      used: false,
+      usedBy: null,
+      usedAt: null
+    };
+  });
+  
+  await database.ref('licenseKeys').update(batch);
+  loadLicenseStats();
+  loadAllKeys();
+}
+
+// --- Sao chép mã ---
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('copy-single-btn')) {
+    const key = e.target.dataset.key;
+    navigator.clipboard.writeText(key).then(() => {
+      alert('Đã sao chép mã: ' + key);
+    });
+  }
+  
+  if (e.target.id === 'copyKeysBtn') {
+    const keys = Array.from(document.querySelectorAll('.copy-single-btn'))
+      .map(btn => btn.dataset.key)
+      .join('\n');
+    
+    navigator.clipboard.writeText(keys).then(() => {
+      alert('Đã sao chép tất cả mã!');
+    });
+  }
+});
+
+// --- Xuất file TXT ---
+document.getElementById('exportKeysBtn').addEventListener('click', function() {
+  const keys = Array.from(document.querySelectorAll('.copy-single-btn'))
+    .map(btn => btn.dataset.key);
+  
+  const content = keys.join('\n');
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `license-keys-${new Date().toISOString().split('T')[0]}.txt`;
+  a.click();
+  
+  URL.revokeObjectURL(url);
+});
+
+// --- Thống kê ---
+function loadLicenseStats() {
+  database.ref('licenseKeys').on('value', snapshot => {
+    if (!snapshot.exists()) {
+      document.getElementById('totalKeys').textContent = '0';
+      document.getElementById('usedKeys').textContent = '0';
+      document.getElementById('availableKeys').textContent = '0';
+      return;
+    }
+    
+    const keys = snapshot.val();
+    const total = Object.keys(keys).length;
+    const used = Object.values(keys).filter(key => key.used).length;
+    const available = total - used;
+    
+    document.getElementById('totalKeys').textContent = total;
+    document.getElementById('usedKeys').textContent = used;
+    document.getElementById('availableKeys').textContent = available;
+  });
+}
+
+// --- Load tất cả mã ---
+function loadAllKeys() {
+  database.ref('licenseKeys').once('value').then(snapshot => {
+    const container = document.getElementById('keysTableContainer');
+    
+    if (!snapshot.exists()) {
+      container.innerHTML = '<p>Chưa có mã bản quyền nào.</p>';
+      return;
+    }
+    
+    const keys = snapshot.val();
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Mã bản quyền</th>
+          <th>Trạng thái</th>
+          <th>Ngày tạo</th>
+          <th>Người dùng</th>
+          <th>Ngày kích hoạt</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Object.entries(keys).map(([key, data]) => `
+          <tr class="${data.used ? 'key-used' : 'key-unused'}">
+            <td><strong>${key}</strong></td>
+            <td>${data.used ? '✅ Đã sử dụng' : '🔄 Chưa sử dụng'}</td>
+            <td>${new Date(data.generatedAt).toLocaleDateString('vi-VN')}</td>
+            <td>${data.usedBy ? data.usedBy.substring(0, 8) + '...' : '---'}</td>
+            <td>${data.usedAt ? new Date(data.usedAt).toLocaleDateString('vi-VN') : '---'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+    
+    container.innerHTML = '';
+    container.appendChild(table);
+  });
+}
+
+// --- Load user đã kích hoạt ---
+function loadActiveUsers() {
+  database.ref('users').once('value').then(snapshot => {
+    const container = document.getElementById('activeUsersList');
+    
+    if (!snapshot.exists()) {
+      container.innerHTML = '<p>Chưa có user nào kích hoạt bản quyền.</p>';
+      return;
+    }
+    
+    const users = snapshot.val();
+    const licensedUsers = [];
+    
+    Object.entries(users).forEach(([userId, userData]) => {
+      if (userData.license && userData.license.licensed) {
+        licensedUsers.push({
+          userId: userId,
+          email: userData.license.activatedBy || 'Unknown',
+          activatedAt: userData.license.activatedAt,
+          licenseKey: userData.license.key || 'Unknown'
+        });
+      }
+    });
+    
+    if (licensedUsers.length === 0) {
+      container.innerHTML = '<p>Chưa có user nào kích hoạt bản quyền.</p>';
+      return;
+    }
+    
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Email</th>
+          <th>Mã bản quyền</th>
+          <th>Ngày kích hoạt</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${licensedUsers.map(user => `
+          <tr>
+            <td>${user.userId.substring(0, 8)}...</td>
+            <td>${user.email}</td>
+            <td><code>${user.licenseKey}</code></td>
+            <td>${new Date(user.activatedAt).toLocaleDateString('vi-VN')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+    
+    document.getElementById('activeUsers').textContent = licensedUsers.length;
+    container.innerHTML = '';
+    container.appendChild(table);
+  });
+}
+
+// --- Quản lý hệ thống ---
+document.getElementById('deleteUsedKeysBtn').addEventListener('click', function() {
+  if (!confirm('Bạn có chắc muốn xóa tất cả mã đã sử dụng? Thao tác này không thể hoàn tác!')) {
+    return;
+  }
+  
+  database.ref('licenseKeys').once('value').then(snapshot => {
+    if (!snapshot.exists()) return;
+    
+    const keys = snapshot.val();
+    const updates = {};
+    
+    Object.entries(keys).forEach(([key, data]) => {
+      if (data.used) {
+        updates[key] = null;
+      }
+    });
+    
+    database.ref('licenseKeys').update(updates).then(() => {
+      alert('Đã xóa mã đã sử dụng!');
+      loadLicenseStats();
+      loadAllKeys();
+    });
+  });
+});
+
+document.getElementById('deleteAllKeysBtn').addEventListener('click', function() {
+  if (!confirm('Bạn có chắc muốn xóa TẤT CẢ mã bản quyền? Thao tác này không thể hoàn tác!')) {
+    return;
+  }
+  
+  database.ref('licenseKeys').remove().then(() => {
+    alert('Đã xóa tất cả mã bản quyền!');
+    loadLicenseStats();
+    loadAllKeys();
+  });
+});
+
+// --- Tìm kiếm ---
+document.getElementById('searchKey').addEventListener('input', function(e) {
+  const searchTerm = e.target.value.toLowerCase();
+  const rows = document.querySelectorAll('#keysTableContainer table tbody tr');
+  
+  rows.forEach(row => {
+    const key = row.cells[0].textContent.toLowerCase();
+    row.style.display = key.includes(searchTerm) ? '' : 'none';
+  });
+});
+
+// --- Đăng xuất ---
+document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+</script>
+</body>
+</html>
