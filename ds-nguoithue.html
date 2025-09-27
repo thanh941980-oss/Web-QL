@@ -123,7 +123,7 @@
             <td>${data.customerName || 'Chưa có tên'}</td>
             <td>${data.idNumber || 'Chưa có CCCD'}</td>
             <td>${data.bookingDate ? new Date(data.bookingDate).toLocaleString("vi-VN") : 'Chưa có ngày'}</td>
-            <td>${data.coTenants || '---'}</td>
+            <td>${data.sharedCustomers && data.sharedCustomers.length > 0 ? data.sharedCustomers.join(', ') : '---'}</td>
             <td class="actions-cell">
               <button class="btn delete-btn" onclick="deleteTenant('${bookingId}')">Xóa</button>
             </td>
@@ -195,3 +195,4 @@
 
 </body>
 </html>
+
