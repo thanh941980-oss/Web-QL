@@ -293,49 +293,52 @@
         
         // Xử lý lưu thông tin đặt phòng - FIXED
         document.getElementById('saveBtn').addEventListener('click', async () => {
-            const roomId = document.getElementById('roomSelect').value;
-            const customerName = document.getElementById('customerName').value;
-            const idNumber = document.getElementById('idNumber').value;
-            const roomPrice = document.getElementById('roomPrice').value;
-            const initialElectricity = document.getElementById('initialElectricity').value;
-            const initialWater = document.getElementById('initialWater').value;
-            const notes = document.getElementById('notes').value;
-            const sharedCustomers = document.getElementById('sharedCustomers').value.split(',').map(item => item.trim());
-            
-            if (!roomId || !customerName || !idNumber || !roomPrice || !initialElectricity || !initialWater) {
-                alert('Vui lòng điền đầy đủ thông tin!');
-                return;
-            }
-            
-            const bookingData = {
-                roomId: roomId,
-                customerName: customerName,
-                idNumber: idNumber,
-                roomPrice: parseInt(roomPrice),
-                initialElectricity: parseInt(initialElectricity),
-                initialWater: parseInt(initialWater),
-                sharedCustomers: sharedCustomers,
-                notes: notes,
-                bookingDate: new Date().toISOString(),
-                status: 'occupied'
-            };
-            
-            try {
-                // Cập nhật trạng thái phòng theo user ID
-                await database.ref(`users/${currentUser.uid}/rooms/${roomId}`).update({
-                    status: 'occupied'
-                });
-                
-                // Lưu thông tin đặt phòng theo user ID
-                await database.ref(`users/${currentUser.uid}/bookings`).push(bookingData);
-                
-                alert('Đặt phòng thành công!');
-                window.location.reload();
-            } catch (error) {
-                console.error('Lỗi khi đặt phòng:', error);
-                alert('Có lỗi xảy ra khi đặt phòng.');
-            }
+    // Thu thập dữ liệu từ các trường input
+    const roomId = document.getElementById('roomSelect').value;
+    const customerName = document.getElementById('customerName').value;
+    const idNumber = document.getElementById('idNumber').value;
+    const roomPrice = document.getElementById('roomPrice').value;
+    const initialElectricity = document.getElementById('initialElectricity').value;
+    const initialWater = document.getElementById('initialWater').value;
+    const notes = document.getElementById('notes').value;
+    const sharedCustomers = document.getElementById('sharedCustomers').value.split(',').map(item => item.trim());
+
+    // Kiểm tra các trường bắt buộc
+    if (!roomId || !customerName || !idNumber || !roomPrice || !initialElectricity || !initialWater) {
+        alert('Vui lòng điền đầy đủ thông tin!');
+        return;
+    }
+
+    // Tạo đối tượng dữ liệu
+    const bookingData = {
+        roomId: roomId,
+        customerName: customerName,
+        idNumber: idNumber,
+        roomPrice: parseInt(roomPrice),
+        initialElectricity: parseInt(initialElectricity),
+        initialWater: parseInt(initialWater),
+        sharedCustomers: sharedCustomers,
+        notes: notes,
+        bookingDate: new Date().toISOString(),
+        status: 'occupied'
+    };
+
+    try {
+        // Cập nhật trạng thái phòng thành 'occupied'
+        await database.ref(`users/${currentUser.uid}/rooms/${roomId}`).update({
+            status: 'occupied'
         });
+
+        // Lưu thông tin đặt phòng vào Firebase
+        await database.ref(`users/${currentUser.uid}/bookings`).push(bookingData);
+
+        alert('Đặt phòng thành công!');
+        window.location.reload();
+    } catch (error) {
+        console.error('Lỗi khi đặt phòng:', error);
+        alert('Có lỗi xảy ra khi đặt phòng.');
+    }
+});
         
         // Xử lý đăng xuất
         document.getElementById('logoutBtn').addEventListener('click', () => {
