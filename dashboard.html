@@ -17,54 +17,112 @@
             color: #333;
             line-height: 1.6;
         }
+
+        /* Thanh header cố định */
+        .fixed-header {
+            background-color: #34495e;
+            color: white;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            height: 50px;
+        }
+
+        .fixed-header h2 {
+            font-size: 1rem;
+            font-weight: normal;
+        }
+
+        .fixed-header .logout-btn {
+            background-color: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .fixed-header .logout-btn:hover {
+            background-color: #e74c3c;
+            border-color: #e74c3c;
+        }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 10px; /* Giảm padding */
+            padding: 10px;
+            margin-top: 50px; /* Điều chỉnh theo chiều cao header */
         }
         
         .dashboard-menu {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Giảm kích thước tối thiểu của các nút */
-            gap: 15px; /* Giảm khoảng cách giữa các nút */
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
         }
         
         .menu-card {
             background: white;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding: 15px; /* Giảm padding */
+            padding: 12px;
             text-align: center;
             transition: transform 0.3s;
             cursor: pointer;
         }
         
         .menu-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
         }
         
         .menu-card h3 {
-            margin-bottom: 8px; /* Giảm margin */
+            margin-bottom: 6px;
             color: #2c3e50;
-            font-size: 1rem; /* Giảm kích thước chữ */
+            font-size: 0.95rem;
         }
         
         .menu-card p {
             color: #7f8c8d;
-            font-size: 0.8rem; /* Giảm kích thước chữ */
+            font-size: 0.75rem;
         }
         
         /* Responsive cho màn hình nhỏ (mobile) */
         @media (max-width: 768px) {
+            .fixed-header {
+                padding: 6px 10px;
+                height: 45px;
+            }
+            .fixed-header h2 {
+                font-size: 0.9rem;
+            }
             .container {
-                padding: 5px; /* Giảm padding trên mobile */
+                padding: 5px;
+                margin-top: 45px;
             }
             
             .dashboard-menu {
                 grid-template-columns: 1fr;
-                gap: 10px;
+                gap: 8px;
+            }
+            
+            .menu-card {
+                padding: 10px;
+            }
+            
+            .menu-card h3 {
+                font-size: 0.9rem;
+            }
+            
+            .menu-card p {
+                font-size: 0.7rem;
             }
         }
     </style>
@@ -72,6 +130,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
 <body>
+    <header class="fixed-header">
+        <h2>Quản lý nhà trọ</h2>
+        <button class="logout-btn" onclick="logout()">Đăng xuất</button>
+    </header>
+
     <div class="container">
         <div class="dashboard-menu">
             <div class="menu-card" onclick="window.location.href='datphong.html'">
@@ -107,7 +170,6 @@
     </div>
 
     <script>
-        // Cấu hình Firebase
         const firebaseConfig = { 
             apiKey : "AIzaSyB7qqxKGsD-enKgzeAvGQ8CwtTsFWy01OM" , 
             authDomain : "web-quan-ly.firebaseapp.com" , 
@@ -118,20 +180,27 @@
             appId : "1:623183081841:web:72cee8d908d383b65e46d0" 
         };
         
-        // Khởi tạo Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        
+        // Hàm đăng xuất
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error("Lỗi khi đăng xuất:", error);
+            });
+        }
         
         // Kiểm tra trạng thái đăng nhập
         auth.onAuthStateChanged((user) => {
             if (!user) {
-                // Nếu chưa đăng nhập, chuyển hướng về trang đăng nhập
                 window.location.href = 'index.html';
             }
         });
     </script>
 
-<footer style="text-align:center; padding:10px; font-size:0.9rem;">
+<footer style="text-align:center; padding:10px; font-size:0.9rem; margin-top: 20px;">
   © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
   <div style="font-size:0.75rem; margin-top:4px; color:#666;">
     Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
