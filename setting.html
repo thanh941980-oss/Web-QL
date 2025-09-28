@@ -7,71 +7,131 @@
   <style>
     * {margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
     body {background:#f5f5f5;color:#333;line-height:1.6;}
-    header {background:#2c3e50;color:#fff;padding:0.7rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;}
-    header h1 {font-size:1.2rem;}
-    .container {max-width:800px;margin:0 auto;padding:20px;}
-    .form-container {background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1);padding:20px;margin-top:20px;}
-    .form-group {margin-bottom:1.5rem;}
-    .form-group label {display:block;margin-bottom:.5rem;font-weight:500;}
-    .form-group input,.form-group select {width:100%;padding:.75rem;border:1px solid #ddd;border-radius:4px;font-size:1rem;}
-    .btn {display:inline-block;padding:.75rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:4px;font-size:1rem;cursor:pointer;transition:.3s;}
+    header {
+      background:#2c3e50;
+      color:#fff;
+      padding:0.8rem 1rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 50%;
+    }
+    .header-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .container {max-width:800px;margin:0 auto;padding:15px;}
+    .form-container {background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1);padding:15px;margin-top:15px;}
+    .form-group {margin-bottom:1.2rem;}
+    .form-group label {display:block;margin-bottom:.4rem;font-weight:500;font-size:0.9rem;}
+    .form-group input,.form-group select {width:100%;padding:.6rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;}
+    .btn {
+      display:inline-block;
+      padding:0.6rem 1rem;
+      background:#3498db;
+      color:#fff;
+      border:none;
+      border-radius:4px;
+      font-size:0.85rem;
+      cursor:pointer;
+      transition:.3s;
+      white-space: nowrap;
+    }
     .btn:hover {background:#2980b9;}
     .back-btn{background:#7f8c8d}.back-btn:hover{background:#95a5a6}
     .logout-btn{background:#e74c3c}.logout-btn:hover{background:#c0392b}
-    .tab-container{margin-bottom:20px;}
-    .tab-buttons{display:flex;border-bottom:1px solid #ddd;flex-wrap:wrap;}
-    .tab-btn{padding:10px 20px;background:none;border:none;cursor:pointer;font-size:1rem;font-weight:500;color:#7f8c8d;border-bottom:3px solid transparent;}
+    .tab-container{margin-bottom:15px;}
+    .tab-buttons{display:flex;border-bottom:1px solid #ddd;flex-wrap:wrap;overflow-x: auto;}
+    .tab-btn{
+      padding:8px 12px;
+      background:none;
+      border:none;
+      cursor:pointer;
+      font-size:0.85rem;
+      font-weight:500;
+      color:#7f8c8d;
+      border-bottom:3px solid transparent;
+      white-space: nowrap;
+    }
     .tab-btn.active{color:#3498db;border-bottom:3px solid #3498db;}
-    .tab-content{display:none;padding:20px 0;}
+    .tab-content{display:none;padding:15px 0;}
     .tab-content.active{display:block;}
-    table {width: 100%;border-collapse: collapse;margin-top: 10px;font-size: 0.9rem;}
-    th, td {border: 1px solid #ddd;padding: 8px 6px;text-align: left;word-wrap: break-word;}
+    table {width: 100%;border-collapse: collapse;margin-top: 10px;font-size: 0.8rem;}
+    th, td {border: 1px solid #ddd;padding: 10px 8px;text-align: left;word-wrap: break-word;}
     th {background-color: #f2f2f2;font-weight: 600;}
     th:nth-child(1), td:nth-child(1) {width: 15%;}
     th:nth-child(2), td:nth-child(2) {width: 30%;}
     th:nth-child(3), td:nth-child(3) {width: 20%;}
     th:nth-child(4), td:nth-child(4) {width: 15%;}
-    th:nth-child(5), td:nth-child(5) {width: 25%;text-align: center;}
-    .small-btn {padding: 6px 10px;font-size: 0.8rem;margin: 0 2px;}
-    .btn-group {display: flex;flex-wrap: wrap;gap: 5px;}
+    th:nth-child(5), td:nth-child(5) {width: 35%;text-align: center;}
+    .small-btn {padding: 5px 8px;font-size: 0.75rem;margin: 0 2px;}
+    @media (max-width: 600px) {
+      header {
+        padding: 0.6rem 0.8rem;
+      }
+      .header-title {
+        font-size: 1rem;
+      }
+      .btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+      }
+      .container {
+        padding: 10px;
+      }
+      .form-container {
+        padding: 12px;
+      }
+      table {font-size: 0.75rem;}
+      th, td {padding: 6px 4px;}
+      .small-btn {padding: 4px 6px;font-size: 0.7rem;margin: 2px 1px;display: block;width: 100%;}
+      .tab-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+      }
+    }
+    @media (max-width: 400px) {
+      .header-title {
+        font-size: 0.9rem;
+        max-width: 40%;
+      }
+      .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+      }
+      .tab-btn {
+        padding: 5px 8px;
+        font-size: 0.75rem;
+      }
+    }
     .license-container {
         display: flex;
         align-items: center;
         gap: 5px;
+        flex-wrap: wrap;
     }
     .license-container input {
         flex-grow: 1;
+        min-width: 150px;
     }
     .paste-btn {
         background: #2ecc71;
-        font-size: 0.9rem;
-        padding: 8px 12px;
+        font-size: 0.85rem;
+        padding: 6px 10px;
     }
     .paste-btn:hover {
         background: #27ae60;
-    }
-    
-    /* Responsive styles */
-    @media (max-width: 600px) {
-      table {font-size: 0.8rem;}
-      th, td {padding: 6px 4px;}
-      .small-btn {padding: 4px 8px;font-size: 0.75rem;margin: 2px 1px;display: block;width: 100%;}
-      .btn {font-size: 0.9rem;padding: 0.6rem 1.2rem;}
-      .container {padding: 10px;}
-      .form-container {padding: 15px;}
-    }
-    
-    @media (max-width: 480px) {
-      header {flex-direction: column;align-items: stretch;gap: 10px;}
-      header h1 {text-align: center;}
-      .btn-group {width: 100%;}
-      .btn-group .btn {flex: 1;text-align: center;}
-      table {font-size: 0.75rem;}
-      th, td {padding: 4px 3px;}
-      .tab-btn {padding: 8px 12px;font-size: 0.9rem;}
-      .tab-content {padding: 15px 0;}
-      .license-container {flex-direction: column;align-items: stretch;}
-      .license-container input {margin-bottom: 5px;}
     }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -80,15 +140,15 @@
 </head>
 <body>
 <header>
-  <h1>Quản lý nhà trọ - Cài đặt</h1>
-  <div class="btn-group">
+  <div class="header-title">Quản lý nhà trọ - Cài đặt</div>
+  <div class="header-buttons">
     <button onclick="window.location.href='dashboard.html'" class="btn back-btn">Quay lại</button>
     <button id="logoutBtn" class="btn logout-btn">Đăng xuất</button>
   </div>
 </header>
 
 <div class="container">
-  <h2>Cài đặt hệ thống</h2>
+  <h2 style="font-size: 1.3rem;">Cài đặt hệ thống</h2>
   <div class="tab-container">
     <div class="tab-buttons">
       <button class="tab-btn active" data-tab="room-management">Quản lý phòng</button>
@@ -99,17 +159,17 @@
 
     <div class="form-container">
       <div class="tab-content active" id="room-management">
-        <h3>Thêm phòng mới</h3>
+        <h3 style="font-size: 1.1rem;">Thêm phòng mới</h3>
         <div class="form-group"><label for="roomNumber">Số phòng</label><input type="text" id="roomNumber"></div>
         <div class="form-group"><label for="roomPrice">Giá phòng (VNĐ/tháng)</label><input type="number" id="roomPrice"></div>
         <div class="form-group"><label for="roomArea">Diện tích (m²)</label><input type="number" id="roomArea"></div>
         <button id="addRoomBtn" class="btn">Thêm phòng</button>
-        <h3 style="margin-top:30px;">Danh sách phòng</h3>
+        <h3 style="margin-top:20px; font-size: 1.1rem;">Danh sách phòng</h3>
         <div id="roomList"></div>
       </div>
 
       <div class="tab-content" id="price-config">
-        <h3>Cấu hình giá mặc định</h3>
+        <h3 style="font-size: 1.1rem;">Cấu hình giá mặc định</h3>
         <div class="form-group"><label for="defaultElectricityPrice">Giá điện</label><input type="number" id="defaultElectricityPrice"></div>
         <div class="form-group"><label for="defaultWaterPrice">Giá nước</label><input type="number" id="defaultWaterPrice"></div>
         <div class="form-group"><label for="defaultWifiPrice">Giá WiFi</label><input type="number" id="defaultWifiPrice"></div>
@@ -118,7 +178,7 @@
       </div>
 
       <div class="tab-content" id="bank-config">
-        <h3>Cấu hình ngân hàng</h3>
+        <h3 style="font-size: 1.1rem;">Cấu hình ngân hàng</h3>
         <div class="form-group">
           <label for="bankName">Ngân hàng</label>
           <select id="bankName">
@@ -137,7 +197,7 @@
       </div>
 
       <div class="tab-content" id="user-settings">
-        <h3>Thông tin tài khoản</h3>
+        <h3 style="font-size: 1.1rem;">Thông tin tài khoản</h3>
         <div class="form-group"><label for="userEmail">Email</label><input type="email" id="userEmail" disabled></div>
         <div class="form-group"><label for="userPassword">Mật khẩu mới</label><input type="password" id="userPassword"></div>
         <div class="form-group"><label for="userConfirmPassword">Xác nhận mật khẩu</label><input type="password" id="userConfirmPassword"></div>
@@ -146,21 +206,21 @@
     </div>
   </div>
 
-  <div class="card" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:6px;">
-    <h3>Kích hoạt bản quyền</h3>
-    <label for="licenseKey">Mã bản quyền:LH:0939.989.818</label>
+  <div class="card" style="margin-top:15px; padding:12px; border:1px solid #ccc; border-radius:6px;">
+    <h3 style="font-size: 1.1rem;">Kích hoạt bản quyền</h3>
+    <label for="licenseKey" style="font-size: 0.9rem;">Mã bản quyền: LH:0939.989.818</label>
     <div class="license-container">
         <input type="text" id="licenseKey" placeholder="Nhập mã bản quyền">
         <button id="pasteBtn" class="btn paste-btn">Dán</button>
         <button id="activateLicenseBtn" class="btn">Kích hoạt</button>
     </div>
-    <p id="licenseMsg" style="margin-top:10px; font-size:0.9rem; color:#555;"></p>
+    <p id="licenseMsg" style="margin-top:8px; font-size:0.85rem; color:#555;"></p>
   </div>
 </div>
 
-<footer style="text-align:center; padding:10px; font-size:0.9rem;">
+<footer style="text-align:center; padding:8px; font-size:0.85rem;">
   © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
-  <div style="font-size:0.75rem; margin-top:4px; color:#666;">
+  <div style="font-size:0.7rem; margin-top:4px; color:#666;">
     Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
   </div>
 </footer>
