@@ -76,6 +76,72 @@
             font-size: 0.9rem;
             margin-top: 0.5rem;
         }
+        
+        /* CSS cho thông báo cập nhật - ÁP DỤNG CHO CẢ PC VÀ MOBILE */
+        .update-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-width: 90%;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+        .update-header {
+            background: #3498db;
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .update-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .update-content {
+            padding: 15px;
+        }
+        .update-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .update-content li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .update-content li:last-child {
+            margin-bottom: 0;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         /* Responsive cho màn hình nhỏ (mobile) */
         @media (max-width: 768px) {
             header {
@@ -103,6 +169,7 @@
                 font-size: 1.2rem;
                 text-align: center;
             }
+            
             /* Điều chỉnh thông báo cho mobile */
             .update-notification {
                 top: 10px;
@@ -111,76 +178,27 @@
                 width: auto;
                 max-width: none;
             }
-            /* CSS cho thông báo cập nhật */
-            .update-notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                width: 320px;
-                max-width: 90%;
-                background: white;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 1000;
-                overflow: hidden;
-                animation: slideIn 0.3s ease-out;
-            }
-            .update-header {
-                background: #3498db;
-                color: white;
-                padding: 12px 15px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .update-header h3 {
-                margin: 0;
-                font-size: 1.1rem;
-            }
-            .close-btn {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 1.2rem;
-                cursor: pointer;
-                padding: 0;
-                width: 24px;
-                height: 24px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .update-content {
-                padding: 15px;
-            }
-            .update-content ul {
-                margin: 0;
-                padding-left: 20px;
-            }
-            .update-content li {
-                margin-bottom: 8px;
-                line-height: 1.4;
-            }
-            .update-content li:last-child {
-                margin-bottom: 0;
-            }
-            
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
 <body>
+    <!-- Thông báo cập nhật - ĐẶT NGOÀI auth-container để hiển thị độc lập -->
+    <div class="update-notification" id="updateNotification">
+        <div class="update-header">
+            <h3>Cập nhật mới</h3>
+            <button class="close-btn" id="closeUpdateBtn">&times;</button>
+        </div>
+        <div class="update-content">
+            <ul>
+                <li>Bản cập nhật này bổ sung giao diện sử dụng trên điện thoại</li>
+                <li>Thêm người ở chung vào danh sách người thuê trọ</li>
+                <li>Cải thiện hiệu suất và sửa lỗi hệ thống</li>
+            </ul>
+        </div>
+    </div>
+
     <div class="auth-container">
         <!-- Form Đăng nhập -->
         <div class="auth-form" id="loginForm">
@@ -213,20 +231,6 @@
             <div id="registerError" class="error"></div>
             <div class="toggle-link" onclick="showLogin()">Đã có tài khoản? Đăng nhập</div>
         </div>
-        <!-- Thông báo cập nhật -->
-        <div class="update-notification" id="updateNotification">
-            <div class="update-header">
-                <h3>Cập nhật mới</h3>
-                <button class="close-btn" id="closeUpdateBtn">&times;</button>
-            </div>
-            <div class="update-content">
-                <ul>
-                    <li>Bản cập nhật này bổ sung giao diện sử dụng trên điện thoại</li>
-                    <li>Thêm người ở chung vào danh sách người thuê trọ</li>
-                    <li>Cải thiện hiệu suất và sửa lỗi hệ thống</li>
-                </ul>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -241,7 +245,6 @@
             appId: "1:490747665921:web:48b0e2bad3a0f894c22a00"
         };
 
-
         // Khởi tạo Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -251,14 +254,15 @@
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('registerForm').style.display = 'block';
         }
-        // Đóng thông báo cập nhật
-        document.getElementById('closeUpdateBtn').addEventListener('click', function() {
-            document.getElementById('updateNotification').style.display = 'none';
-        });
         function showLogin() {
             document.getElementById('registerForm').style.display = 'none';
             document.getElementById('loginForm').style.display = 'block';
         }
+
+        // Đóng thông báo cập nhật
+        document.getElementById('closeUpdateBtn').addEventListener('click', function() {
+            document.getElementById('updateNotification').style.display = 'none';
+        });
 
         // Đăng nhập
         document.getElementById('loginBtn').addEventListener('click', () => {
@@ -299,26 +303,5 @@
                 });
         });
     </script>
-
-<!-- <footer style="text-align:center; padding:10px; font-size:0.9rem;">
-  © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
-  <div style="font-size:0.75rem; margin-top:4px; color:#666;">
-    Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
-  </div>
-</footer>
-<script>
-  (function(){
-    document.getElementById('copyrightYear').textContent = new Date().getFullYear();
-    if (typeof firebase !== 'undefined') {
-      try {
-        firebase.database().ref('config/license').once('value').then(snap => {
-          const l = snap.exists() ? snap.val() : { licensed: false };
-          document.getElementById('licenseStatus').textContent = l.licensed ? 'Đã cấp bản quyền' : 'Miễn phí';
-        });
-      } catch(e){}
-    }
-  })();
-</script> -->
-
 </body>
 </html>
