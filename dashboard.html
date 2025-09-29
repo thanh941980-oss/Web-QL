@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Quản lý nhà trọ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Thanh header cố định */
+        .fixed-header {
+            background-color: #34495e;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            height: 60px;
+        }
+
+        .fixed-header h2 {
+            font-size: 1.3rem;
+            font-weight: normal;
+        }
+
+        .fixed-header .logout-btn {
+            background-color: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .fixed-header .logout-btn:hover {
+            background-color: #e74c3c;
+            border-color: #e74c3c;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            margin-top: 60px;
+        }
+        
+        .dashboard-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .menu-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .menu-card h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        
+        .menu-card p {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+        
+        /* Responsive cho tablet */
+        @media (max-width: 1024px) {
+            .dashboard-menu {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 15px;
+            }
+            
+            .menu-card {
+                padding: 15px;
+            }
+        }
+        
+        /* Responsive cho màn hình nhỏ (mobile) */
+        @media (max-width: 768px) {
+            .fixed-header {
+                padding: 8px 15px;
+                height: 50px;
+            }
+            .fixed-header h2 {
+                font-size: 1rem;
+            }
+            
+            .fixed-header .logout-btn {
+                padding: 4px 8px;
+                font-size: 0.85rem;
+            }
+            
+            .container {
+                padding: 10px;
+                margin-top: 50px;
+            }
+            
+            .dashboard-menu {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                margin-top: 10px;
+            }
+            
+            .menu-card {
+                padding: 15px;
+            }
+            
+            .menu-card h3 {
+                font-size: 1rem;
+                margin-bottom: 8px;
+            }
+            
+            .menu-card p {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Responsive cho màn hình rất nhỏ */
+        @media (max-width: 480px) {
+            .fixed-header {
+                padding: 6px 10px;
+                height: 45px;
+            }
+            
+            .fixed-header h2 {
+                font-size: 0.9rem;
+            }
+            
+            .container {
+                padding: 8px;
+                margin-top: 45px;
+            }
+            
+            .menu-card {
+                padding: 12px;
+            }
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <header class="fixed-header">
+        <h2>Quản lý nhà trọ</h2>
+        <button class="logout-btn" onclick="logout()">Đăng xuất</button>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-menu">
+            <div class="menu-card" onclick="window.location.href='datphong.html'">
+                <h3>Đặt phòng</h3>
+                <p>Quản lý đặt phòng cho khách hàng</p>
+            </div>
+            
+            <div class="menu-card" onclick="window.location.href='traphong.html'">
+                <h3>Trả phòng</h3>
+                <p>Xử lý trả phòng và tính tiền</p>
+            </div>
+
+            <div class="menu-card" onclick="window.location.href='ds-nguoithue.html'">
+                <h3>Người thuê phòng</h3>
+                <p>Danh sách khách đang thuê phòng</p>
+            </div>
+        
+            <div class="menu-card" onclick="window.location.href='ds-nguoitra.html'">
+                <h3>Người trả phòng</h3>
+                <p>Danh sách khách đã trả phòng</p>
+            </div>
+            
+            <div class="menu-card" onclick="window.location.href='tonghop.html'">
+                <h3>Tổng hợp</h3>
+                <p>Xem báo cáo và thống kê</p>
+            </div>
+            
+            <div class="menu-card" onclick="window.location.href='setting.html'">
+                <h3>Cài đặt</h3>
+                <p>Cấu hình hệ thống</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAz38ll5L6nZOicZyQRFtKd0TuzohrLFws",
+            authDomain: "quan-ly-nha-tro-2a4bf.firebaseapp.com",
+            databaseURL: "https://quan-ly-nha-tro-2a4bf-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "quan-ly-nha-tro-2a4bf",
+            storageBucket: "quan-ly-nha-tro-2a4bf.firebasestorage.app",
+            messagingSenderId: "490747665921",
+            appId: "1:490747665921:web:48b0e2bad3a0f894c22a00"
+        };
+
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        // Hàm đăng xuất
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error("Lỗi khi đăng xuất:", error);
+            });
+        }
+        
+        // Kiểm tra trạng thái đăng nhập
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+
+<footer style="text-align:center; padding:15px; font-size:0.9rem; margin-top: 30px;">
+  © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
+  <div style="font-size:0.75rem; margin-top:4px; color:#666;">
+    Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
+  </div>
+</footer>
+<script>
+  (function(){
+    document.getElementById('copyrightYear').textContent = new Date().getFullYear();
+    if (typeof firebase !== 'undefined') {
+      try {
+        firebase.database().ref('config/license').once('value').then(snap => {
+          const l = snap.exists() ? snap.val() : { licensed: false };
+          document.getElementById('licenseStatus').textContent = l.licensed ? 'Đã cấp bản quyền' : 'Miễn phí';
+        });
+      } catch(e){}
+    }
+  })();
+</script>
+</body>
+</html>

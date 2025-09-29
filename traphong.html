@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trả phòng - Quản lý nhà trọ</title>
+  <style>
+    * {margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+    body {background-color:#f5f5f5;color:#333;line-height:1.6;font-size:14px;}
+    header {
+      background-color:#2c3e50;
+      color:white;
+      padding:0.8rem 1rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 50%;
+    }
+    .header-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .container {max-width:1000px;margin:0 auto;padding:20px;}
+    .form-container {background:white;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);padding:20px;margin-top:20px;}
+    .form-group {margin-bottom:0.7rem;}
+    .form-group label {display:block;margin-bottom:0.3rem;font-weight:500;}
+    .form-group input,.form-group select,.form-group textarea{width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;}
+    .form-row{display:flex;gap:15px;margin-bottom:0.7rem;}
+    .form-row .form-group{flex:1;}
+    .calculation-result{background:#f8f9fa;border-left:4px solid #3498db;padding:15px;margin:20px 0;border-radius:4px;}
+    .btn{
+      display:inline-block;
+      padding:0.5rem 0.8rem;
+      background:#3498db;
+      color:white;
+      border:none;
+      border-radius:4px;
+      font-size:0.85rem;
+      cursor:pointer;
+      transition:.3s;
+      white-space: nowrap;
+    }
+    .btn:hover{background:#2980b9;}
+    .back-btn{background:#7f8c8d}.back-btn:hover{background:#95a5a6}
+    .logout-btn{background:#e74c3c}.logout-btn:hover{background:#c0392b}
+    .qr-section{margin-top:20px;text-align:center;display:none;padding:15px;background:#f1f8ff;border-radius:8px;}
+    #qrCode{margin:15px auto;max-width:200px;}
+    .action-buttons{display:flex;gap:10px;margin-top:15px;justify-content:center;flex-wrap:wrap;}
+    .zalo-btn{background:#0068ff;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .zalo-btn:hover{background:#0051cc;}
+    .qr-btn{background:#27ae60}.qr-btn:hover{background:#219653}
+    .copy-btn{background:#9b59b6}.copy-btn:hover{background:#8e44ad}
+    .zalo-icon{width:20px;height:20px;}
+    .notification{position:fixed;top:20px;right:20px;padding:15px 20px;background:#2ecc71;color:white;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.1);transform:translateX(100%);transition:transform .3s ease-out;z-index:1000;}
+    .notification.show{transform:translateX(0);}
+    .notification.error{background:#e74c3c;}
+    .zalo-guide{margin-top:15px;padding:10px;background:#f9f9f9;border-radius:5px;border-left:4px solid #0068ff;font-size:.9rem;}
+    
+    @media(max-width:768px){
+      header {
+        padding: 0.6rem 0.8rem;
+      }
+      .header-title {
+        font-size: 1rem;
+        max-width: 45%;
+      }
+      .btn {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.8rem;
+      }
+      .form-row{flex-direction:column;gap:10px}
+      .container{padding:10px}
+      h2{font-size:1.2rem;text-align:center}
+      .action-buttons{flex-direction:column}
+    }
+    
+    @media(max-width:480px){
+      header {
+        padding: 0.5rem 0.6rem;
+      }
+      .header-title {
+        font-size: 0.9rem;
+        max-width: 40%;
+      }
+      .btn {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<header>
+  <div class="header-title">Tính tiền phòng</div>
+  <div class="header-buttons">
+    <button onclick="window.location.href='dashboard.html'" class="btn back-btn">Quay lại</button>
+    <button id="logoutBtn" class="btn logout-btn">Đăng xuất</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2>Thông tin tính tiền phòng</h2>
+  <div class="form-container">
+    <div class="form-group">
+      <label for="roomSelect">Chọn phòng</label>
+      <select id="roomSelect"><option value="">-- Chọn phòng --</option></select>
+    </div>
+
+    <div id="bookingInfo" style="display:none;">
+      <h3>Thông tin đặt phòng</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Người đặt phòng</label><input type="text" id="customerName" readonly></div>
+        <div class="form-group"><label>Số CCCD/CMND</label><input type="text" id="idNumber" readonly></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label>Chỉ số điện lúc đặt</label><input type="number" id="initialElectricity" readonly></div>
+        <div class="form-group"><label>Chỉ số nước lúc đặt</label><input type="number" id="initialWater" readonly></div>
+      </div>
+
+      <h3>Thông tin trả phòng</h3>
+      <div class="form-row">
+        <div class="form-group"><label for="finalElectricity">Chỉ số điện lúc trả</label><input type="number" id="finalElectricity"></div>
+        <div class="form-group"><label for="finalWater">Chỉ số nước lúc trả</label><input type="number" id="finalWater"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label for="electricityPrice">Đơn giá điện</label><input type="number" id="electricityPrice" value="3500"></div>
+        <div class="form-group"><label for="waterPrice">Đơn giá nước</label><input type="number" id="waterPrice" value="20000"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label for="wifiCost">Tiền WiFi</label><input type="number" id="wifiCost" value="50000"></div>
+        <div class="form-group"><label for="garbageCost">Tiền rác</label><input type="number" id="garbageCost" value="20000"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label for="otherCost">Tiền khác</label><input type="number" id="otherCost" value="0"></div>
+        <div class="form-group"><label for="otherDescription">Mô tả khoản khác</label><input type="text" id="otherDescription" placeholder="Mô tả khoản phí khác"></div>
+      </div>
+
+      <div class="calculation-result">
+        <h4>Kết quả tính toán</h4>
+        <p>Tiền điện: <span id="electricityCost">0</span> VNĐ</p>
+        <p>Tiền nước: <span id="waterCost">0</span> VNĐ</p>
+        <p>Tiền phòng: <span id="roomCost">0</span> VNĐ</p>
+        <p>Tiền WiFi: <span id="wifiCostDisplay">0</span> VNĐ</p>
+        <p>Tiền rác: <span id="garbageCostDisplay">0</span> VNĐ</p>
+        <p>Tiền khác: <span id="otherCostDisplay">0</span> VNĐ</p>
+        <p><strong>Tổng cộng: <span id="totalCost">0</span> VNĐ</strong></p>
+
+        <div class="action-buttons">
+          <button id="generateQRBtn" class="btn qr-btn">Tạo mã QR thanh toán</button>
+          <button id="copyZaloBtn" class="btn copy-btn">Sao chép nội dung Zalo</button>
+        </div> 
+
+        <div class="zalo-guide">
+          <p><strong>Hướng dẫn:</strong> Sao chép nội dung thanh toán, sau đó mở Zalo và dán vào tin nhắn để gửi cho khách hàng.</p>
+        </div>
+
+        <div class="qr-section" id="qrSection">
+          <h4>Mã QR thanh toán</h4>
+          <div id="qrCode"></div>
+          <p>Quét mã QR để thanh toán</p>
+        </div>
+      </div>
+
+      <div class="form-group"><label for="checkoutNotes">Ghi chú</label><textarea id="checkoutNotes" rows="3"></textarea></div>
+      <button id="checkoutBtn" class="btn">Xác nhận trả phòng</button>
+    </div>
+  </div>
+</div>
+
+<div class="notification" id="notification">Nội dung đã được sao chép!</div>
+
+<script>
+ // Firebase và các hàm JavaScript giữ nguyên
+ const firebaseConfig = { 
+            apiKey: "AIzaSyB7qqxKGsD-enKgzeAvGQ8CwtTsFWy01OM",
+            authDomain: "web-quan-ly.firebaseapp.com",
+            databaseURL: "https://web-quan-ly-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "web-quan-ly",
+            storageBucket: "web-quan-ly.firebasestorage.app",
+            messagingSenderId: "623183081841",
+            appId: "1:623183081841:web:72cee8d908d383b65e46d0"
+        };
+
+  firebase.initializeApp(firebaseConfig);const auth=firebase.auth();const database=firebase.database();
+
+let currentUser = null;
+let currentBooking=null;let currentTotalCost=0;let bankConfig={};
+
+auth.onAuthStateChanged(user=>{
+  if(!user){
+    window.location.href='index.html';
+  }else{
+    currentUser = user;
+    loadPriceConfig();
+    loadBankConfig();
+    loadOccupiedRooms();
+    loadLicenseStatus();
+  }
+});
+
+function loadPriceConfig(){
+  database.ref(`users/${currentUser.uid}/config/prices`).once('value').then(s=>{
+    if(s.exists()){
+      const c=s.val();
+      document.getElementById('electricityPrice').value=c.electricity??3500;
+      document.getElementById('waterPrice').value=c.water??20000;
+      document.getElementById('wifiCost').value=c.wifi??50000;
+      document.getElementById('garbageCost').value=c.garbage??20000;
+    }
+  });
+}
+
+function loadBankConfig(){
+  database.ref(`users/${currentUser.uid}/config/bank`).once('value').then(s=>{
+    if(s.exists()){
+      bankConfig=s.val();
+    }
+  });
+}
+
+function loadOccupiedRooms(){
+  database.ref(`users/${currentUser.uid}/rooms`).once('value').then(s=>{
+    const sel=document.getElementById('roomSelect');
+    sel.innerHTML='<option value="">-- Chọn phòng --</option>';
+    
+    console.log('Occupied rooms data:', s.val());
+    
+    if(s.exists()){
+      s.forEach(cs=>{
+        const room = cs.val();
+        const roomNumber = cs.key;
+        
+        console.log('Checking room:', roomNumber, room);
+        
+        if(room.status === 'occupied'){
+          const opt=document.createElement('option');
+          opt.value=roomNumber;
+          opt.textContent=`Phòng ${roomNumber}`;
+          sel.appendChild(opt);
+        }
+      });
+      
+      if(sel.options.length === 1){
+        const opt=document.createElement('option');
+        opt.textContent='Không có phòng đã thuê';
+        opt.disabled=true;
+        sel.appendChild(opt);
+      }
+    }else{
+      const opt=document.createElement('option');
+      opt.textContent='Không có phòng đã thuê';
+      opt.disabled=true;
+      sel.appendChild(opt);
+    }
+  }).catch(error => {
+    console.error('Error loading rooms:', error);
+  });
+}
+
+document.getElementById('roomSelect').addEventListener('change',function(){
+  const roomId=this.value;
+  if(!roomId){
+    document.getElementById('bookingInfo').style.display='none';
+    return;
+  }
+  
+  database.ref(`users/${currentUser.uid}/bookings`).orderByChild('roomId').equalTo(roomId).once('value').then(s=>{
+    if(s.exists()){
+      s.forEach(cs=>{
+        currentBooking={id:cs.key,...cs.val()};
+        document.getElementById('customerName').value=currentBooking.customerName;
+        document.getElementById('idNumber').value=currentBooking.idNumber;
+        document.getElementById('initialElectricity').value=currentBooking.initialElectricity;
+        document.getElementById('initialWater').value=currentBooking.initialWater;
+        document.getElementById('bookingInfo').style.display='block';
+        calculateCost();
+      });
+    }else{
+      alert('Không tìm thấy thông tin đặt phòng');
+    }
+  });
+});
+
+function calculateCost(){
+  if(!currentBooking)return;
+  const finalElectricity=parseInt(document.getElementById('finalElectricity').value)||0;
+  const finalWater=parseInt(document.getElementById('finalWater').value)||0;
+  const electricityPrice=parseInt(document.getElementById('electricityPrice').value)||0;
+  const waterPrice=parseInt(document.getElementById('waterPrice').value)||0;
+  const wifiCost=parseInt(document.getElementById('wifiCost').value)||0;
+  const garbageCost=parseInt(document.getElementById('garbageCost').value)||0;
+  const otherCost=parseInt(document.getElementById('otherCost').value)||0;
+  
+  const electricityUsed=finalElectricity-currentBooking.initialElectricity;
+  const waterUsed=finalWater-currentBooking.initialWater;
+  const electricityCost=electricityUsed*electricityPrice;
+  const waterCost=waterUsed*waterPrice;
+  const roomCost=currentBooking.roomPrice;
+  
+  currentTotalCost=electricityCost+waterCost+roomCost+wifiCost+garbageCost+otherCost;
+  
+  document.getElementById('electricityCost').textContent=electricityCost.toLocaleString('vi-VN');
+  document.getElementById('waterCost').textContent=waterCost.toLocaleString('vi-VN');
+  document.getElementById('roomCost').textContent=roomCost.toLocaleString('vi-VN');
+  document.getElementById('wifiCostDisplay').textContent=wifiCost.toLocaleString('vi-VN');
+  document.getElementById('garbageCostDisplay').textContent=garbageCost.toLocaleString('vi-VN');
+  document.getElementById('otherCostDisplay').textContent=otherCost.toLocaleString('vi-VN');
+  document.getElementById('totalCost').textContent=currentTotalCost.toLocaleString('vi-VN');
+}
+
+['finalElectricity','finalWater','electricityPrice','waterPrice','wifiCost','garbageCost','otherCost'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',calculateCost);
+});
+
+document.getElementById('generateQRBtn').addEventListener('click',function(){
+  if(currentTotalCost<=0){
+    alert('Vui lòng nhập thông tin để tính toán trước khi tạo mã QR');
+    return;
+  }
+  if(!bankConfig.bankName||!bankConfig.bankAccount){
+    alert('Chưa cấu hình ngân hàng trong Cài đặt');
+    return;
+  }
+  
+  const qrSection=document.getElementById('qrSection');
+  const qrCodeDiv=document.getElementById('qrCode');
+  qrCodeDiv.innerHTML='';
+  
+  const today=new Date();
+  const ngay=`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+  const content=`${bankConfig.bankContent||'Thanh toán tiền tháng'} ${ngay}`;
+  
+  const qrUrl=`https://img.vietqr.io/image/${bankConfig.bankName}-${bankConfig.bankAccount}-compact2.png?amount=${currentTotalCost}&addInfo=${encodeURIComponent(content)}`;
+  
+  const img=document.createElement('img');
+  img.src=qrUrl;
+  img.style.maxWidth='200px';
+  qrCodeDiv.appendChild(img);
+  qrSection.style.display='block';
+});
+
+document.getElementById('copyZaloBtn').addEventListener('click', function(){
+  if(currentTotalCost <= 0){
+    alert('Vui lòng tính toán trước khi chia sẻ');
+    return;
+  }
+  if(!bankConfig.bankName || !bankConfig.bankAccount){
+    alert('Chưa cấu hình ngân hàng trong Cài đặt');
+    return;
+  }
+
+  const today = new Date();
+  const thang = today.getMonth() + 1;
+  const nam = today.getFullYear();
+  const ngay = `${today.getDate()}/${thang}/${nam}`;
+  
+  const content = `${bankConfig.bankContent || 'Thanh toán tiền tháng'} ${thang}/${nam}`;
+
+  const qrUrl = `https://img.vietqr.io/image/${bankConfig.bankName}-${bankConfig.bankAccount}-compact2.png?amount=${currentTotalCost}&addInfo=${encodeURIComponent(content)}`;
+
+  const msg =
+`💳 *THANH TOÁN TIỀN PHÒNG THÁNG ${thang}/${nam}*
+
+🏠 Phòng: ${currentBooking.roomId}
+👤 Khách hàng: ${currentBooking.customerName}
+📅 Ngày tính: ${ngay}
+
+📊 *CHI TIẾT THANH TOÁN:*
+• Tiền điện: ${document.getElementById('electricityCost').textContent} VNĐ
+• Tiền nước: ${document.getElementById('waterCost').textContent} VNĐ  
+• Tiền phòng: ${document.getElementById('roomCost').textContent} VNĐ
+• Tiền WiFi: ${document.getElementById('wifiCostDisplay').textContent} VNĐ
+• Tiền rác: ${document.getElementById('garbageCostDisplay').textContent} VNĐ
+• Tiền khác: ${document.getElementById('otherCostDisplay').textContent} VNĐ
+─────────────────
+💰 *TỔNG CỘNG: ${document.getElementById('totalCost').textContent} VNĐ*
+
+🏦 *THÔNG TIN CHUYỂN KHOẢN:*
+• Ngân hàng: ${bankConfig.bankName}
+• Chủ TK: ${bankConfig.accountName || '---'}
+• Số TK: ${bankConfig.bankAccount}
+• Nội dung: ${content}
+
+📱 *HƯỚNG DẪN THANH TOÁN:*
+1. Chuyển khoản theo thông tin trên
+2. Hoặc quét mã QR bên dưới
+3. Gửi biên lai cho chủ trọ sau khi thanh toán
+
+🔗 *MÃ QR THANH TOÁN:*
+${qrUrl}
+
+_Cảm ơn bạn!_`;
+
+  navigator.clipboard.writeText(msg).then(() => {
+    showNotification('Đã sao chép nội dung thanh toán! Dán vào Zalo để gửi cho khách hàng.');
+  }).catch(err => {
+    console.error('Lỗi sao chép: ', err);
+    showNotification('Lỗi sao chép!', true);
+  });
+});
+
+function showNotification(msg,isError=false){
+  const noti=document.getElementById('notification');
+  noti.textContent=msg;
+  if(isError){
+    noti.classList.add('error');
+  }else{
+    noti.classList.remove('error');
+  }
+  noti.classList.add('show');
+  setTimeout(()=>{
+    noti.classList.remove('show');
+  },3000);
+}
+
+document.getElementById('checkoutBtn').addEventListener('click',()=>{
+  if(!currentBooking)return;
+  
+  const finalElectricity=parseInt(document.getElementById('finalElectricity').value)||0;
+  const finalWater=parseInt(document.getElementById('finalWater').value)||0;
+  
+  if(finalElectricity<currentBooking.initialElectricity){
+    alert('Chỉ số điện không hợp lệ');
+    return;
+  }
+  if(finalWater<currentBooking.initialWater){
+    alert('Chỉ số nước không hợp lệ');
+    return;
+  }
+  
+  const electricityUsed=finalElectricity-currentBooking.initialElectricity;
+  const waterUsed=finalWater-currentBooking.initialWater;
+  const electricityPrice=parseInt(document.getElementById('electricityPrice').value)||0;
+  const waterPrice=parseInt(document.getElementById('waterPrice').value)||0;
+  const wifiCost=parseInt(document.getElementById('wifiCost').value)||0;
+  const garbageCost=parseInt(document.getElementById('garbageCost').value)||0;
+  const otherCost=parseInt(document.getElementById('otherCost').value)||0;
+  const otherDescription=document.getElementById('otherDescription').value;
+  const roomCost=currentBooking.roomPrice;
+  
+  const totalCost=electricityUsed*electricityPrice+waterUsed*waterPrice+roomCost+wifiCost+garbageCost+otherCost;
+  
+  const checkoutData={
+    roomId:currentBooking.roomId,
+    bookingId:currentBooking.id,
+    customerName:currentBooking.customerName,
+    finalElectricity,
+    finalWater,
+    electricityUsed,
+    waterUsed,
+    electricityPrice,
+    waterPrice,
+    electricityCost:electricityUsed*electricityPrice,
+    waterCost:waterUsed*waterPrice,
+    roomCost,
+    wifiCost,
+    garbageCost,
+    otherCost,
+    otherDescription,
+    totalCost,
+    checkoutDate:new Date().toISOString(),
+    notes:document.getElementById('checkoutNotes').value
+  };
+  
+  database.ref(`users/${currentUser.uid}/checkouts`).push(checkoutData)
+    .then(()=> database.ref(`users/${currentUser.uid}/rooms/${currentBooking.roomId}`).update({status:'available'}))
+    .then(()=> database.ref(`users/${currentUser.uid}/bookings/${currentBooking.id}`).remove())
+    .then(()=>{
+      alert('Trả phòng thành công!');
+      window.location.reload();
+    })
+    .catch(error => {
+      console.error('Error during checkout:', error);
+      alert('Có lỗi xảy ra khi trả phòng');
+    });
+});
+
+document.getElementById('logoutBtn').addEventListener('click',()=>{
+  auth.signOut().then(()=>{
+    window.location.href='index.html';
+  });
+});
+
+function loadLicenseStatus(){
+  database.ref(`users/${currentUser.uid}/license`).on('value',snap=>{
+    if(snap.exists()&&snap.val().licensed){
+      document.getElementById('licenseStatus').textContent='Đã cấp bản quyền';
+    }else{
+      document.getElementById('licenseStatus').textContent='Miễn phí';
+    }
+  });
+}
+</script>
+
+<footer style="text-align:center; padding:10px; font-size:0.9rem;">
+  © <span id="copyrightYear"></span> Quản lý nhà trọ — Bản quyền <strong id="licenseStatus">Miễn phí</strong>
+  <div style="font-size:0.75rem; margin-top:4px; color:#666;">
+    Nếu đã kích hoạt bản quyền, hệ thống sẽ lưu không giới hạn số phòng.
+  </div>
+</footer>
+<script>
+  document.getElementById('copyrightYear').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
